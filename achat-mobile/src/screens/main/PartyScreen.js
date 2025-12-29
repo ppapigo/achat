@@ -10,6 +10,7 @@ import {
 import { Users, Plus, MessageCircle, BellOff, UserPlus, Circle } from 'lucide-react-native';
 import { colors, spacing, fontSize } from '../../styles/theme';
 import AddFriendModal from '../../components/party/AddFriendModal';
+import CreatePartyModal from '../../components/party/CreatePartyModal';
 
 // Mock 파티(채팅방) 데이터
 const MOCK_PARTIES = [
@@ -75,6 +76,7 @@ export default function PartyScreen({ navigation }) {
   const [friends, setFriends] = useState(MOCK_FRIENDS);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
+  const [showCreateParty, setShowCreateParty] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -180,7 +182,11 @@ export default function PartyScreen({ navigation }) {
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>파티</Text>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.7}>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          activeOpacity={0.7}
+          onPress={() => setShowCreateParty(true)}
+        >
           <Plus size={24} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
@@ -272,6 +278,16 @@ export default function PartyScreen({ navigation }) {
         onClose={() => setShowAddFriend(false)}
         onFriendAdded={(newFriend) => {
           setFriends(prev => [...prev, { ...newFriend, status: 'online', statusMessage: '' }]);
+        }}
+      />
+
+      {/* 파티 생성 모달 */}
+      <CreatePartyModal
+        visible={showCreateParty}
+        onClose={() => setShowCreateParty(false)}
+        friends={friends}
+        onPartyCreated={(newParty) => {
+          setParties(prev => [newParty, ...prev]);
         }}
       />
     </View>
