@@ -75,7 +75,7 @@ export default function BoardScreen({ navigation }) {
     <TouchableOpacity
       style={styles.postCard}
       onPress={() => {
-        // TODO: 게시글 상세로 이동
+        navigation.navigate('PostDetail', { post: item });
       }}
     >
       <View style={styles.postHeader}>
@@ -146,7 +146,11 @@ export default function BoardScreen({ navigation }) {
       />
 
       {/* 글쓰기 FAB */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity 
+        style={styles.fab} 
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('CreatePost')}
+      >
         <Text style={styles.fabText}>✏️</Text>
       </TouchableOpacity>
     </View>

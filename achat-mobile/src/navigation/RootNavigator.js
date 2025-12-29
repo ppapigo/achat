@@ -22,6 +22,10 @@ import PartyScreen from '../screens/main/PartyScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import CardScreen from '../screens/main/CardScreen';
 
+// Board Screens
+import PostDetailScreen from '../screens/board/PostDetailScreen';
+import CreatePostScreen from '../screens/board/CreatePostScreen';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -133,6 +137,20 @@ function MainStack() {
         component={CardScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="PostDetail" 
+        component={PostDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="CreatePost" 
+        component={CreatePostScreen}
+        options={{
+          animation: 'slide_from_bottom',
         }}
       />
     </Stack.Navigator>

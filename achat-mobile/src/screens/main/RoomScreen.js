@@ -172,7 +172,7 @@ function CooldownNotice({ cooldown }) {
 
 // 메인 채팅방 화면
 export default function RoomScreen({ route, navigation }) {
-  const { roomId, roomType = 'SEASON' } = route.params;
+  const { roomId, roomType = 'SEASON', isDM = false, roomName, friend, isParty = false, isHost = false } = route.params;
   const { currentRoom, leaveRoom } = useRoomStore();
   
   // WebSocket 연결
@@ -192,13 +192,21 @@ export default function RoomScreen({ route, navigation }) {
   const [timeLeft, setTimeLeft] = useState(600);
   const [replyTo, setReplyTo] = useState(null);
   
-  // 증강 관련 상태
+  // 증강 관련 상태 (빠른매칭에서만 사용)
   const [showAugmentPicker, setShowAugmentPicker] = useState(false);
   const [activeAugment, setActiveAugment] = useState(null);
   const [augmentOptions, setAugmentOptions] = useState(MOCK_AUGMENTS);
   
+  // 라운드 관련 (시즌방/파티방용)
+  const [roundStarted, setRoundStarted] = useState(false);
+  
   const flatListRef = useRef(null);
   const myUserId = 'me'; // TODO: authStore에서 가져오기
+
+  // 빠른매칭 여부
+  const isQuickMatch = roomType === 'QUICK';
+  // 증강이 필요한지 (빠른매칭에서만)
+  const needsAugment = isQuickMatch && !activeAugment;
 
   // 에러 표시
   useEffect(() => {
@@ -207,17 +215,21 @@ export default function RoomScreen({ route, navigation }) {
     }
   }, [error]);
 
-  // 라운드 시작 시 증강 선택 모달 표시
+  // 라운드 시작 시 증강 선택 모달 표시 (빠른매칭에서만)
   useEffect(() => {
+    if (!isQuickMatch) return;
+    
     const timer = setTimeout(() => {
       setShowAugmentPicker(true);
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [currentRound]);
+  }, [currentRound, isQuickMatch]);
 
-  // 타이머
+  // 타이머 (빠른매칭에서만)
   useEffect(() => {
+    if (!isQuickMatch) return;
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 0) {
@@ -268,16 +280,30 @@ export default function RoomScreen({ route, navigation }) {
 
   // 방 나가기
   const handleLeave = async () => {
-    await leaveRoom();
+    if (!isDM) {
+      await leaveRoom();
+    }
     navigation.goBack();
   };
 
-  const roomName = currentRoom?.name || '채팅방';
-  const participantCount = participants.length || currentRoom?.currentPlayers || 0;
-  const maxParticipants = roomType === 'QUICK' ? (currentRoom?.maxPlayers || 6) : null;
-  const totalRounds = roomType === 'QUICK' ? 3 : null;
+  const displayRoomName = roomName || currentRoom?.name || '채팅방';
+  const participantCount = isDM ? 2 : (participants.length || currentRoom?.currentPlayers || 0);
+  const maxParticipants = isQuickMatch ? (currentRoom?.maxPlayers || 6) : null;
+  const totalRounds = isQuickMatch ? 3 : null;
 
-  const inputDisabled = !activeAugment;
+  // 입력 비활성화 조건
+  // - 빠른매칭: 증강 선택 전까지
+  // - 시즌방/파티방: 항상 가능
+  // - DM: 항상 가능
+  const inputDisabled = isQuickMatch && !activeAugment;
+
+  // 라운드 시작 핸들러 (시즌방/파티방 방장용)
+  const handleStartRound = () => {
+    setRoundStarted(true);
+    setCurrentRound((r) => r + 1);
+    addSystemMessage(`🎮 라운드 ${currentRound + 1} 시작!`);
+    // TODO: API 호출
+  };
 
   return (
     <KeyboardAvoidingView
@@ -296,18 +322,51 @@ export default function RoomScreen({ route, navigation }) {
         <TouchableOpacity onPress={handleLeave} style={styles.backButton}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.roomName} numberOfLines={1}>{roomName}</Text>
-        <ParticipantCount count={participantCount} max={maxParticipants} />
+        {isDM && friend ? (
+          <View style={styles.dmHeaderInfo}>
+            <Text style={styles.roomName} numberOfLines={1}>{displayRoomName}</Text>
+            <Text style={styles.dmStatus}>
+              {friend.status === 'online' ? '🟢 온라인' : friend.status === 'away' ? '🟡 자리비움' : '⚫ 오프라인'}
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.roomName} numberOfLines={1}>{displayRoomName}</Text>
+        )}
+        {!isDM && <ParticipantCount count={participantCount} max={maxParticipants} />}
       </View>
 
-      {/* 라운드 타이머 */}
-      <RoundTimer
-        currentRound={currentRound}
-        totalRounds={totalRounds}
-        timeLeft={timeLeft}
-        roomType={roomType}
-        activeAugment={activeAugment}
-      />
+      {/* 빠른매칭: 라운드 타이머 */}
+      {isQuickMatch && (
+        <RoundTimer
+          currentRound={currentRound}
+          totalRounds={totalRounds}
+          timeLeft={timeLeft}
+          roomType={roomType}
+          activeAugment={activeAugment}
+        />
+      )}
+
+      {/* 시즌방/파티방: 방장 라운드 시작 버튼 */}
+      {!isDM && !isQuickMatch && isHost && (
+        <View style={styles.hostControls}>
+          <Text style={styles.roundInfoText}>라운드 {currentRound}</Text>
+          <TouchableOpacity 
+            style={styles.startRoundButton}
+            onPress={handleStartRound}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.startRoundButtonText}>🎮 라운드 시작</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 시즌방/파티방: 일반 유저 라운드 정보 */}
+      {!isDM && !isQuickMatch && !isHost && (
+        <View style={styles.roundInfoBar}>
+          <Text style={styles.roundInfoText}>라운드 {currentRound}</Text>
+          {isParty && <Text style={styles.partyBadge}>파티</Text>}
+        </View>
+      )}
 
       {/* 쿨타임 알림 */}
       <CooldownNotice cooldown={cooldown} />
@@ -376,14 +435,16 @@ export default function RoomScreen({ route, navigation }) {
         )}
       </View>
 
-      {/* 증강 선택 모달 */}
-      <AugmentPickerModal
-        visible={showAugmentPicker}
-        augments={augmentOptions}
-        onSelect={handleAugmentSelect}
-        onTimeout={handleAugmentSelect}
-        timeLimit={15}
-      />
+      {/* 증강 선택 모달 (빠른매칭에서만) */}
+      {isQuickMatch && (
+        <AugmentPickerModal
+          visible={showAugmentPicker}
+          augments={augmentOptions}
+          onSelect={handleAugmentSelect}
+          onTimeout={handleAugmentSelect}
+          timeLimit={15}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -431,6 +492,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
+  dmHeaderInfo: {
+    flex: 1,
+  },
+  dmStatus: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   participantContainer: {
     backgroundColor: colors.bgLight,
     paddingHorizontal: spacing.sm,
@@ -441,6 +510,53 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: fontSize.sm,
     fontWeight: '600',
+  },
+
+  // 방장 컨트롤 (시즌방/파티방)
+  hostControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.bgMedium,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  startRoundButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 12,
+  },
+  startRoundButtonText: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: '600',
+  },
+  roundInfoBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.bgMedium,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  roundInfoText: {
+    color: colors.textPrimary,
+    fontSize: fontSize.md,
+    fontWeight: '600',
+  },
+  partyBadge: {
+    backgroundColor: colors.accent,
+    color: colors.textPrimary,
+    fontSize: fontSize.xs,
+    fontWeight: 'bold',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
 
   // 라운드 타이머

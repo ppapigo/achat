@@ -92,8 +92,22 @@ export default function PartyScreen({ navigation }) {
   };
 
   const handleFriendPress = (friend) => {
-    // 1:1 채팅 or 프로필 보기
-    // TODO: 친구 프로필/1:1 채팅
+    // 1:1 채팅으로 이동
+    navigation.navigate('Room', {
+      roomId: `dm_${friend.id}`,
+      roomName: friend.name,
+      isDM: true,
+      friend: friend,
+    });
+  };
+
+  const handleStartDM = (friend) => {
+    navigation.navigate('Room', {
+      roomId: `dm_${friend.id}`,
+      roomName: friend.name,
+      isDM: true,
+      friend: friend,
+    });
   };
 
   // 채팅방 아이템
@@ -162,7 +176,10 @@ export default function PartyScreen({ navigation }) {
           </Text>
         )}
       </View>
-      <TouchableOpacity style={styles.chatButton}>
+      <TouchableOpacity 
+        style={styles.chatButton}
+        onPress={() => handleStartDM(item)}
+      >
         <MessageCircle size={20} color={colors.primary} />
       </TouchableOpacity>
     </TouchableOpacity>
