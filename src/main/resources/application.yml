@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: achat-secret-key-minimum-256-bits-for-hs256-algorithm-here
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+  verification:
+    code-expiration-ms: 300000

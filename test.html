@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>A.chat WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin-bottom: 20px; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 5px 15px; cursor: pointer; }
+        #output { border: 1px solid #ccc; padding: 10px; height: 200px; overflow-y: scroll; font-family: monospace; }
+        #roundState { background: #f0f0f0; padding: 10px; margin-bottom: 10px; }
+        .phase-PICKING { background: #fff3cd; }
+        .phase-PLAYING { background: #d4edda; }
+        .phase-ENDED { background: #f8d7da; }
+    </style>
+</head>
+<body>
+<h1>A.chat WebSocket Test</h1>
+
+<div class="section">
+    <input id="token" placeholder="JWT Token" style="width:500px"><br>
+    <input id="roomId" placeholder="Room ID" style="width:300px">
+    <button onclick="connect()">Connect</button>
+</div>
+
+<div id="roundState">라운드: 대기 중</div>
+
+<div class="section">
+    <input id="message" placeholder="Message" style="width:300px">
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+    let stompClient = null;
+    let countdownInterval = null;
+
+    function log(msg) {
+        const output = document.getElementById('output');
+        output.innerHTML += msg + '<br>';
+        output.scrollTop = output.scrollHeight;
+    }
+
+    function updateRoundState(data) {
+        const el = document.getElementById('roundState');
+        el.className = 'phase-' + data.phase;
+
+        let text = `라운드: ${data.phase}`;
+        if (data.currentPhaseNumber > 0) {
+            text += ` (${data.currentPhaseNumber}/3)`;
+        }
+
+        if (data.phaseEndsAt) {
+            const endsAt = new Date(data.phaseEndsAt);
+            startCountdown(endsAt, el, text);
+        } else {
+            el.textContent = text;
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+    }
+
+    function startCountdown(endsAt, el, baseText) {
+        if (countdownInterval) clearInterval(countdownInterval);
+
+        countdownInterval = setInterval(() => {
+            const remaining = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
+            el.textContent = `${baseText} - ${remaining}초 남음`;
+            if (remaining <= 0) clearInterval(countdownInterval);
+        }, 1000);
+    }
+
+    function connect() {
+        const token = document.getElementById('token').value;
+        const roomId = document.getElementById('roomId').value;
+
+        if (!token || !roomId) {
+            log('Token과 RoomId를 입력하세요');
+            return;
+        }
+
+        stompClient = new StompJs.Client({
+            brokerURL: 'ws://localhost:8080/ws',
+            connectHeaders: { Authorization: 'Bearer ' + token },
+            debug: str => console.log(str),
+            onConnect: () => {
+                log('✅ Connected!');
+
+                // 메시지 구독
+                stompClient.subscribe('/topic/rooms/' + roomId + '/messages', msg => {
+                    const data = JSON.parse(msg.body);
+                    const augment = data.appliedAugment ? ' [' + data.appliedAugment + ']' : '';
+                    log('<b>' + data.senderId.substring(0,8) + ':</b> ' + data.appliedContent + augment);
+                });
+
+                // 이벤트 구독
+                stompClient.subscribe('/topic/rooms/' + roomId + '/events', msg => {
+                    const data = JSON.parse(msg.body);
+                    log('👤 ' + data.userId.substring(0,8) + ' ' + data.type);
+                });
+
+                // 라운드 상태 구독
+                stompClient.subscribe('/topic/rooms/' + roomId + '/round', msg => {
+                    const data = JSON.parse(msg.body);
+                    updateRoundState(data);
+                    log('🎮 라운드: ' + data.phase + ' (' + data.currentPhaseNumber + '/3)');
+                });
+
+                // 입장
+                stompClient.publish({ destination: '/app/rooms/' + roomId + '/join' });
+            },
+            onStompError: frame => log('❌ Error: ' + frame.body),
+            onWebSocketError: error => { log('❌ WebSocket Error'); console.error(error); }
+        });
+
+        stompClient.activate();
+    }
+
+    function sendMessage() {
+        const roomId = document.getElementById('roomId').value;
+        const content = document.getElementById('message').value;
+        if (!content) return;
+
+        stompClient.publish({
+            destination: '/app/rooms/' + roomId + '/chat',
+            body: JSON.stringify({ content: content })
+        });
+        document.getElementById('message').value = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('message').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    });
+</script>
+</body>
+</html>
