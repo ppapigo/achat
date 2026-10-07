@@ -3,38 +3,28 @@ package com.achat.sanction;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class SanctionStore {
 
-    // id -> Sanction
-    private final Map<String, Sanction> sanctions = new ConcurrentHashMap<>();
+    private final SanctionRepository repository;
 
-    // userId -> List<sanctionId> (빠른 조회용)
-    private final Map<String, List<String>> userSanctions = new ConcurrentHashMap<>();
-
-    public void save(Sanction sanction) {
-        sanctions.put(sanction.getId(), sanction);
-        userSanctions.computeIfAbsent(sanction.getUserId(), k -> new ArrayList<>())
-                .add(sanction.getId());
-    }
+    public void save(Sanction sanction) { repository.save(sanction); }
 
     public Optional<Sanction> findById(String id) {
-        return Optional.ofNullable(sanctions.get(id));
+        return repository.findById(id);
     }
 
     /**
      * 특정 유저의 모든 제재 조회
      */
     public List<Sanction> findByUserId(String userId) {
-        List<String> ids = userSanctions.getOrDefault(userId, List.of());
-        return ids.stream()
-                .map(sanctions::get)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Sanction::getIssuedAt).reversed())
-                .collect(Collectors.toList());
+        return repository.findByUserIdOrderByIssuedAtDesc(userId);
     }
 
     /**
@@ -77,7 +67,7 @@ public class SanctionStore {
      * 모든 제재 조회 (관리자용)
      */
     public List<Sanction> findAll() {
-        return sanctions.values().stream()
+        return repository.findAllByOrderByIssuedAtDesc().stream()
                 .sorted(Comparator.comparing(Sanction::getIssuedAt).reversed())
                 .collect(Collectors.toList());
     }
@@ -86,7 +76,7 @@ public class SanctionStore {
      * 활성 제재만 조회 (관리자용)
      */
     public List<Sanction> findAllActive() {
-        return sanctions.values().stream()
+        return repository.findAllByOrderByIssuedAtDesc().stream()
                 .filter(Sanction::isEffective)
                 .sorted(Comparator.comparing(Sanction::getIssuedAt).reversed())
                 .collect(Collectors.toList());

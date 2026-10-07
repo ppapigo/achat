@@ -1,5 +1,7 @@
 package com.achat.rank;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.round.Round;
 import com.achat.round.RoundScore;
 import com.achat.user.User;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class RankService {
 
     private final UserStore userStore;

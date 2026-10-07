@@ -1,5 +1,8 @@
 package com.achat.home;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,11 +10,19 @@ import java.util.Map;
 /**
  * 유저의 개인 홈 (싸이월드 미니홈피 컨셉)
  */
-public class Home {
+@Entity
+@Table(name = "homes")
+public class Home extends JpaEntity {
+    protected Home() {}
 
-    private final String userId;
+
+    @Id
+    @Column(length = 36)
+    private String userId;
     private String statusMessage;           // 상태 메시지 (100자 이하)
+    @Column(length = 36)
     private String representativeJobId;     // 대표 직업
+    @Column(length = 36)
     private String representativeAugmentId; // 대표 증강
     private String backgroundTheme;         // 배경 테마
     private String titleBadge;              // 칭호
@@ -21,6 +32,9 @@ public class Home {
     private long visitCount;                // 방문 수
 
     // ✅ 가구 배치 (가구ID -> 위치)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "home_furniture", joinColumns = @JoinColumn(name = "user_id"))
+    @MapKeyColumn(name = "furniture_id")
     private Map<String, FurniturePosition> furnitureLayout;
 
     private Instant createdAt;
@@ -39,6 +53,7 @@ public class Home {
     }
 
     // === 가구 위치 내부 클래스 ===
+    @Embeddable
     public static class FurniturePosition {
         private double x;  // 0-100 (퍼센트)
         private double y;  // 0-100 (퍼센트)

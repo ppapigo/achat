@@ -1,5 +1,7 @@
 package com.achat.room;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.room.dto.CreateRoomRequest;
 import com.achat.room.dto.RoomResponse;
 import com.achat.roomrank.RoomRankService;  // 추가!
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class RoomService {
 
     private final RoomStore roomStore;

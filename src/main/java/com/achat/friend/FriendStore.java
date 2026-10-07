@@ -1,90 +1,48 @@
 package com.achat.friend;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class FriendStore {
+    private final FriendRequestRepository requestRepository;
+    private final RoomInviteRepository inviteRepository;
+    private final FriendConnectionRepository connectionRepository;
 
-    private final Map<String, FriendRequest> requests = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> friends = new ConcurrentHashMap<>();
-    private final Map<String, RoomInvite> invites = new ConcurrentHashMap<>();
-
-    // ===== 친구 요청 =====
-
-    public void saveRequest(FriendRequest request) {
-        requests.put(request.getId(), request);
-    }
-
-    public Optional<FriendRequest> findRequestById(String id) {
-        return Optional.ofNullable(requests.get(id));
-    }
-
+    public void saveRequest(FriendRequest request) { requestRepository.save(request); }
+    public Optional<FriendRequest> findRequestById(String id) { return requestRepository.findById(id); }
     public List<FriendRequest> findPendingRequestsTo(String userId) {
-        return requests.values().stream()
-                .filter(r -> r.getToUserId().equals(userId))
-                .filter(r -> r.getStatus() == FriendRequest.Status.PENDING)
-                .sorted(Comparator.comparing(FriendRequest::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+        return requestRepository.findByToUserIdAndStatusOrderByCreatedAtDesc(userId, FriendRequest.Status.PENDING);
     }
-
     public boolean hasPendingRequest(String fromUserId, String toUserId) {
-        return requests.values().stream()
-                .anyMatch(r -> r.getFromUserId().equals(fromUserId)
-                        && r.getToUserId().equals(toUserId)
-                        && r.getStatus() == FriendRequest.Status.PENDING);
+        return requestRepository.existsByFromUserIdAndToUserIdAndStatus(fromUserId, toUserId, FriendRequest.Status.PENDING);
     }
-
-    // ===== 친구 관계 =====
-
     public void addFriend(String userId1, String userId2) {
-        friends.computeIfAbsent(userId1, k -> ConcurrentHashMap.newKeySet()).add(userId2);
-        friends.computeIfAbsent(userId2, k -> ConcurrentHashMap.newKeySet()).add(userId1);
+        addConnection(userId1, userId2);
+        addConnection(userId2, userId1);
     }
-
+    private void addConnection(String userId, String friendId) {
+        if (!areFriends(userId, friendId)) connectionRepository.save(new FriendConnection(userId, friendId));
+    }
     public void removeFriend(String userId1, String userId2) {
-        Set<String> set1 = friends.get(userId1);
-        Set<String> set2 = friends.get(userId2);
-        if (set1 != null) set1.remove(userId2);
-        if (set2 != null) set2.remove(userId1);
+        connectionRepository.deleteByUserIdAndFriendId(userId1, userId2);
+        connectionRepository.deleteByUserIdAndFriendId(userId2, userId1);
     }
-
-    public boolean areFriends(String userId1, String userId2) {
-        Set<String> set = friends.get(userId1);
-        return set != null && set.contains(userId2);
-    }
-
+    public boolean areFriends(String userId1, String userId2) { return connectionRepository.existsByUserIdAndFriendId(userId1, userId2); }
     public Set<String> getFriendIds(String userId) {
-        return friends.getOrDefault(userId, Set.of());
+        return connectionRepository.findByUserId(userId).stream().map(FriendConnection::getFriendId).collect(java.util.stream.Collectors.toSet());
     }
-
-    // ===== 방 초대 =====
-
-    public void saveInvite(RoomInvite invite) {
-        invites.put(invite.getId(), invite);
-    }
-
-    public Optional<RoomInvite> findInviteById(String id) {
-        return Optional.ofNullable(invites.get(id));
-    }
-
+    public void saveInvite(RoomInvite invite) { inviteRepository.save(invite); }
+    public Optional<RoomInvite> findInviteById(String id) { return inviteRepository.findById(id); }
     public List<RoomInvite> findPendingInvitesTo(String userId) {
-        return invites.values().stream()
-                .filter(i -> i.getToUserId().equals(userId))
-                .filter(i -> i.getStatus() == RoomInvite.Status.PENDING)
-                .filter(i -> !i.isExpired())
-                .sorted(Comparator.comparing(RoomInvite::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+        return inviteRepository.findByToUserIdAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(userId, RoomInvite.Status.PENDING, Instant.now());
     }
-
     public boolean hasPendingInvite(String toUserId, String roomId) {
-        return invites.values().stream()
-                .anyMatch(i -> i.getToUserId().equals(toUserId)
-                        && i.getRoomId().equals(roomId)
-                        && i.getStatus() == RoomInvite.Status.PENDING
-                        && !i.isExpired());
+        return inviteRepository.existsByToUserIdAndRoomIdAndStatusAndExpiresAtAfter(toUserId, roomId, RoomInvite.Status.PENDING, Instant.now());
     }
 }

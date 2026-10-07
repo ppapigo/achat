@@ -1,0 +1,15 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Users, ArrowUpRight } from 'lucide-react';
+import { api } from '../lib/api.js';
+import { useResource } from '../hooks/useResource.js';
+import { useToast } from '../contexts/ToastContext.jsx';
+import { ActionButton, Empty, Field, Modal, PageHeading, ResourceState } from '../components/UI.jsx';
+
+export default function PartyPage() {
+  const parties = useResource('/api/party/my'); const friends = useResource('/api/friends'); const [creating, setCreating] = useState(false); const [selected, setSelected] = useState([]); const [name, setName] = useState(''); const [busy, setBusy] = useState(false); const notify = useToast(); const navigate = useNavigate();
+  async function create(event) { event.preventDefault(); setBusy(true); try { const result = await api.request('/api/party/create', { method: 'POST', body: { name, friendIds: selected } }); setCreating(false); navigate(`/rooms/${result.partyId}`); } catch (error) { notify(error.message, 'error'); } finally { setBusy(false); } }
+  return <><PageHeading eyebrow="YOUR LITTLE CIRCLE" title="우리의 파티" description="친구들끼리 편하게 모이는 작은 대화 공간."><button className="button" onClick={() => setCreating(true)}><Plus size={18} />파티 만들기</button></PageHeading><ResourceState resource={parties}>{parties.data?.length ? <div className="room-grid">{parties.data.map((party) => <article className="panel room-card" key={party.id}><span className="room-symbol symbol-2"><Users size={27} /></span><span className="badge soft">친구 모임</span><h2>{party.name}</h2><p>{party.memberNames.join(', ')}</p><div className="room-card-footer"><span>{party.memberCount}명 함께하는 중</span><Link className="text-link" to={`/rooms/${party.id}`}>대화하기 <ArrowUpRight size={17} /></Link></div><ActionButton className="button ghost small-button" action={async () => { if (window.confirm('이 파티에서 나갈까요?')) { await api.request(`/api/party/${party.id}/leave`, { method: 'POST' }); parties.reload(); } }}>파티 나가기</ActionButton></article>)}</div> : <div className="panel"><Empty title="친구들과 새로운 공간을 만들어요" description="한 명 이상의 친구를 선택해서 파티를 시작하세요." /></div>}</ResourceState>
+    {creating && <Modal title="파티 만들기" onClose={() => setCreating(false)}><form className="form-stack" onSubmit={create}><Field label="파티 이름 (선택)"><input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="이름을 비우면 친구 이름으로 만들어져요" /></Field><Field label="함께할 친구"><ResourceState resource={friends}>{friends.data?.length ? <div className="friend-picker">{friends.data.map((friend) => <label key={friend.id}><input type="checkbox" checked={selected.includes(friend.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, friend.id] : current.filter((id) => id !== friend.id))} />{friend.username}</label>)}</div> : <p className="muted">먼저 <Link to="/friends">친구를 추가</Link>해주세요.</p>}</ResourceState></Field><p className="muted">선택한 친구는 파티 멤버로 바로 추가됩니다.</p><button className="button wide" disabled={busy || !selected.length}>친구 {selected.length}명과 시작하기</button></form></Modal>}
+  </>;
+}

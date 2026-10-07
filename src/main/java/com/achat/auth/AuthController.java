@@ -1,16 +1,18 @@
 package com.achat.auth;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.auth.dto.*;
 import com.achat.common.ApiResponse;
 import com.achat.user.User;
 import com.achat.user.UserStore;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@Transactional
 @RequestMapping("/auth")
 public class AuthController {
 

@@ -1,18 +1,31 @@
 package com.achat.user;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import com.achat.rank.Tier;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class User {
-    private final String id;
-    private final String email;
-    private String username;  // 추가!
-    private final String passwordHash;
+@Entity
+@Table(name = "users")
+public class User extends JpaEntity {
+    protected User() {}
+
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(nullable = false, unique = true, length = 254)
+    private String email;
+    @Column(nullable = false, length = 100)
+    private String username;
+    @Column(nullable = false, unique = true, length = 100)
+    private String usernameKey;
+    private String passwordHash;
     private boolean emailVerified;
-    private final Instant createdAt;
+    private Instant createdAt;
 
     // 재화 시스템
     private int coins;
@@ -22,18 +35,23 @@ public class User {
     // 랭크 시스템
     private int rp;
     private int rankedGames;
+    @Enumerated(EnumType.STRING)
     private Tier seasonHighestTier;
     private int seasonId;
 
     // 배치고사 시스템
     private boolean placementCompleted;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_placement_ranks", joinColumns = @JoinColumn(name = "user_id"))
+    @OrderColumn(name = "game_index")
+    @Column(name = "finish_rank")
     private List<Integer> placementRanks;
     private boolean isAdmin = false;
     public static final int PLACEMENT_GAMES_REQUIRED = 5;
 
     public User(String email, String passwordHash) {
         this.id = UUID.randomUUID().toString();
-        this.email = email;
+        this.email = email.trim().toLowerCase(java.util.Locale.ROOT);
         this.username = generateDefaultUsername(email);  // 추가!
         this.passwordHash = passwordHash;
         this.emailVerified = false;
@@ -61,6 +79,13 @@ public class User {
         // 4자리 랜덤 숫자 추가
         int random = (int) (Math.random() * 9000) + 1000;
         return base + "#" + random;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void normalizeIdentity() {
+        email = email.trim().toLowerCase(java.util.Locale.ROOT);
+        usernameKey = username.toLowerCase(java.util.Locale.ROOT);
     }
 
     // === Getters ===

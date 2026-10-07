@@ -1,8 +1,19 @@
 {
-  "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.2.0",
-    "axios": "^1.13.2",
-    "lucide-react": "^0.562.0",
-    "zustand": "^5.0.9"
+  "name": "achat",
+  "private": true,
+  "workspaces": [
+    "achat-front"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace achat-front",
+    "dev:ui": "npm run dev:ui --workspace achat-front",
+    "build": "npm run build --workspace achat-front",
+    "preview": "npm run preview --workspace achat-front",
+    "lint": "npm run lint --workspace achat-front",
+    "test": "npm run test --workspace achat-front",
+    "test:ui": "node scripts/check-ui.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

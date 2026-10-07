@@ -1,5 +1,7 @@
 package com.achat.home;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.home.dto.HomeDto.*;
 import org.springframework.stereotype.Service;
 
@@ -7,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class HomeService {
 
     private final HomeStore homeStore;

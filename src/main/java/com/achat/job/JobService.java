@@ -1,5 +1,7 @@
 package com.achat.job;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.job.dto.JobResponse;
 import com.achat.job.dto.SelectJobRequest;
 import com.achat.job.dto.UserJobResponse;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@Transactional
 public class JobService {
 
     private final JobStore jobStore;

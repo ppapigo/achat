@@ -1,5 +1,7 @@
 package com.achat.friend;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.room.Room;
 import com.achat.room.RoomStore;
 import com.achat.user.User;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class FriendService {
 
     private final FriendStore friendStore;
@@ -76,6 +79,7 @@ public class FriendService {
 
     // ===== 친구 요청 =====
 
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public FriendRequest sendRequest(String fromUserId, String toUsername) {
         User toUser = userStore.findByUsername(toUsername)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다: " + toUsername));
@@ -272,6 +276,7 @@ public class FriendService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public String acceptInvite(String inviteId, String userId) {
         RoomInvite invite = friendStore.findInviteById(inviteId)
                 .orElseThrow(() -> new IllegalArgumentException("초대를 찾을 수 없습니다"));

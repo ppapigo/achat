@@ -1,5 +1,7 @@
 package com.achat.auth;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.auth.dto.*;
 import com.achat.sanction.Sanction;
 import com.achat.sanction.SanctionService;
@@ -14,6 +16,7 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
+@Transactional
 public class AuthService {
 
     private final UserStore userStore;

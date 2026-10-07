@@ -1,19 +1,31 @@
 package com.achat.friend;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.UUID;
 
-public class FriendRequest {
+@Entity
+@Table(name = "friend_requests", indexes = @Index(columnList = "to_user_id,status,created_at"))
+public class FriendRequest extends JpaEntity {
+    protected FriendRequest() {}
+
 
     public enum Status {
         PENDING, ACCEPTED, REJECTED
     }
 
-    private final String id;
-    private final String fromUserId;
-    private final String toUserId;
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String fromUserId;
+    @Column(length = 36)
+    private String toUserId;
+    @Enumerated(EnumType.STRING)
     private Status status;
-    private final Instant createdAt;
+    private Instant createdAt;
 
     public FriendRequest(String fromUserId, String toUserId) {
         this.id = UUID.randomUUID().toString();

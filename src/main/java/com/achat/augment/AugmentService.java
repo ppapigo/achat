@@ -1,5 +1,7 @@
 package com.achat.augment;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.augment.dto.AugmentOptionResponse;
 import com.achat.augment.dto.PickAugmentRequest;
 import com.achat.augment.effect.AugmentEffectRegistry;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Random;
 
 @Service
+@Transactional
 public class AugmentService {
 
     private final AugmentStore augmentStore;

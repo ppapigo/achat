@@ -1,5 +1,7 @@
 package com.achat.shop;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.home.HomeService;
 import com.achat.user.User;
 import com.achat.user.UserStore;
@@ -9,22 +11,26 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Transactional
 public class ShopService {
 
     private final UserStore userStore;
     private final HomeService homeService;
 
     private final Map<String, ShopItem> shopItems = new ConcurrentHashMap<>();
-    private final Map<String, List<UserInventoryItem>> inventories = new ConcurrentHashMap<>();
-    private final Map<String, UserEquipment> equipments = new ConcurrentHashMap<>();
+    private final UserInventoryItemRepository inventoryRepository;
+    private final UserEquipmentRepository equipmentRepository;
 
-    public ShopService(UserStore userStore, HomeService homeService) {
+    public ShopService(UserStore userStore, HomeService homeService,
+                       UserInventoryItemRepository inventoryRepository, UserEquipmentRepository equipmentRepository) {
+        this.inventoryRepository = inventoryRepository;
+        this.equipmentRepository = equipmentRepository;
         this.userStore = userStore;
         this.homeService = homeService;
-        initMockItems();
+        initCatalog();
     }
 
-    private void initMockItems() {
+    private void initCatalog() {
         // === Consumables ===
         shopItems.put("augment_pack_basic", new ShopItem(
                 "augment_pack_basic", ItemType.CONSUMABLE, ItemCategory.AUGMENT_PACK,
@@ -232,21 +238,17 @@ public class ShopService {
     }
 
     private void addToInventory(String userId, String itemId, boolean stackable) {
-        List<UserInventoryItem> inventory = inventories.computeIfAbsent(userId, k -> new ArrayList<>());
-
-        Optional<UserInventoryItem> existing = inventory.stream()
-                .filter(i -> i.getItemId().equals(itemId))
-                .findFirst();
+        Optional<UserInventoryItem> existing = inventoryRepository.findByUserIdAndItemId(userId, itemId);
 
         if (existing.isPresent() && stackable) {
             existing.get().addQuantity(1);
         } else if (existing.isEmpty()) {
-            inventory.add(new UserInventoryItem(itemId));
+            inventoryRepository.save(new UserInventoryItem(userId, itemId));
         }
     }
 
     public List<UserInventoryItem> getInventory(String userId) {
-        return inventories.getOrDefault(userId, new ArrayList<>());
+        return inventoryRepository.findByUserIdOrderByAcquiredAtAsc(userId);
     }
 
     public boolean hasItem(String userId, String itemId) {
@@ -264,7 +266,7 @@ public class ShopService {
             return EquipResult.fail("Cannot equip this item");
         }
 
-        UserEquipment equipment = equipments.computeIfAbsent(userId, UserEquipment::new);
+        UserEquipment equipment = equipmentRepository.findById(userId).orElseGet(() -> equipmentRepository.save(new UserEquipment(userId)));
         equipment.equip(item.getEquipSlot(), itemId);
 
         if (item.getEquipSlot() == EquipSlot.BACKGROUND) {
@@ -279,7 +281,7 @@ public class ShopService {
     }
 
     public EquipResult unequip(String userId, EquipSlot slot) {
-        UserEquipment equipment = equipments.get(userId);
+        UserEquipment equipment = equipmentRepository.findById(userId).orElse(null);
         if (equipment == null || equipment.getEquipped(slot) == null) {
             return EquipResult.fail("Nothing equipped");
         }
@@ -296,7 +298,7 @@ public class ShopService {
     }
 
     public UserEquipment getEquipment(String userId) {
-        return equipments.computeIfAbsent(userId, UserEquipment::new);
+        return equipmentRepository.findById(userId).orElseGet(() -> equipmentRepository.save(new UserEquipment(userId)));
     }
 
     public UseResult useItem(String userId, String itemId) {
@@ -305,14 +307,7 @@ public class ShopService {
             return UseResult.fail("Cannot use this item");
         }
 
-        List<UserInventoryItem> inventory = inventories.get(userId);
-        if (inventory == null) {
-            return UseResult.fail("Item not owned");
-        }
-
-        Optional<UserInventoryItem> invItem = inventory.stream()
-                .filter(i -> i.getItemId().equals(itemId))
-                .findFirst();
+        Optional<UserInventoryItem> invItem = inventoryRepository.findByUserIdAndItemId(userId, itemId);
 
         if (invItem.isEmpty() || !invItem.get().useOne()) {
             return UseResult.fail("Item not owned");

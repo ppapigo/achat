@@ -1,11 +1,14 @@
 package com.achat.sanction;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.user.UserStore;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class SanctionService {
 
     private final SanctionStore sanctionStore;

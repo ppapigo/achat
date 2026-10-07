@@ -3,28 +3,21 @@ package com.achat.history;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class GameHistoryStore {
-    private final Map<String, List<GameHistory>> historyByUser = new ConcurrentHashMap<>();
+    private final GameHistoryRepository repository;
 
-    public void save(GameHistory history) {
-        historyByUser.computeIfAbsent(history.getUserId(), k -> new ArrayList<>())
-                .add(history);
-    }
+    public void save(GameHistory history) { repository.save(history); }
 
-    public List<GameHistory> findByUserId(String odUserId) {
-        return historyByUser.getOrDefault(odUserId, Collections.emptyList());
-    }
+    public List<GameHistory> findByUserId(String userId) { return repository.findByUserIdOrderByPlayedAtAsc(userId); }
 
     public List<GameHistory> findRecentByUserId(String odUserId, int limit) {
-        List<GameHistory> all = findByUserId(odUserId);
-        return all.stream()
-                .sorted(Comparator.comparing(GameHistory::getPlayedAt).reversed())
-                .limit(limit)
-                .collect(Collectors.toList());
+        return limit <= 0 ? List.of() : repository.findByUserIdOrderByPlayedAtDesc(odUserId, org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
     public UserStats calculateStats(String odUserId) {

@@ -1,35 +1,30 @@
 package com.achat.like;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class LikeStore {
-
-    // postId -> Set<userId>
-    private final Map<String, Set<String>> postLikes = new ConcurrentHashMap<>();
+    private final ContentLikeRepository repository;
 
     public boolean add(String postId, String userId) {
-        Set<String> likes = postLikes.computeIfAbsent(postId, k -> ConcurrentHashMap.newKeySet());
-        return likes.add(userId);
+        if (exists(postId, userId)) return false;
+        repository.save(new ContentLike(ContentLike.TargetType.POST, postId, userId));
+        return true;
     }
-
     public boolean remove(String postId, String userId) {
-        Set<String> likes = postLikes.get(postId);
-        if (likes == null) return false;
-        return likes.remove(userId);
+        return repository.findByTargetTypeAndTargetIdAndUserId(ContentLike.TargetType.POST, postId, userId).map(like -> {
+            repository.delete(like);
+            return true;
+        }).orElse(false);
     }
-
     public boolean exists(String postId, String userId) {
-        Set<String> likes = postLikes.get(postId);
-        return likes != null && likes.contains(userId);
+        return repository.existsByTargetTypeAndTargetIdAndUserId(ContentLike.TargetType.POST, postId, userId);
     }
-
-    public int count(String postId) {
-        Set<String> likes = postLikes.get(postId);
-        return likes != null ? likes.size() : 0;
-    }
+    public int count(String postId) { return Math.toIntExact(repository.countByTargetTypeAndTargetId(ContentLike.TargetType.POST, postId)); }
 }

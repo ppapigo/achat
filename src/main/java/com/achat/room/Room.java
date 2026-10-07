@@ -1,17 +1,31 @@
 package com.achat.room;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class Room {
-    private final String id;
-    private final String name;
+@Entity
+@Table(name = "rooms", indexes = @Index(columnList = "owner_id"))
+public class Room extends JpaEntity {
+    protected Room() {}
+
+    @Id
+    @Column(length = 36)
+    private String id;
+    private String name;
+    @Column(length = 36)
     private String ownerId;
-    private final int maxMembers;
-    private final Set<String> memberIds;
-    private final Instant createdAt;
+    private int maxMembers;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "room_members", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "user_id", length = 36)
+    private Set<String> memberIds;
+    private Instant createdAt;
+    @Enumerated(EnumType.STRING)
     private RoomType type = RoomType.PERMANENT;
 
     // 시즌 연결 (영구방용)
@@ -23,7 +37,10 @@ public class Room {
 
     // 계층 구조
     private String parentId = null;
-    private final Set<String> subRoomIds = new HashSet<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "room_sub_rooms", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "sub_room_id", length = 36)
+    private Set<String> subRoomIds = new HashSet<>();
 
     public Room(String name, String ownerId, int maxMembers) {
         this.id = UUID.randomUUID().toString();

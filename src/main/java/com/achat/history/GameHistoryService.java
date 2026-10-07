@@ -1,5 +1,7 @@
 package com.achat.history;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.history.dto.GameHistoryResponse;
 import com.achat.history.dto.UserStatsResponse;
 import org.slf4j.Logger;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@Transactional
 public class GameHistoryService {
     private static final Logger log = LoggerFactory.getLogger(GameHistoryService.class);
 

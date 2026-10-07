@@ -1,50 +1,31 @@
 package com.achat.social;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.time.*;
 
-/**
- * 최근 상호작용 유저 저장소
- * - 같은 방에서 채팅한 유저 기록
- */
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class InteractionStore {
+    private final UserInteractionRepository repository;
 
-    // userId -> Map<targetUserId, lastInteractionTime>
-    private final Map<String, Map<String, Instant>> interactions = new ConcurrentHashMap<>();
-
-    /**
-     * 상호작용 기록 (양방향)
-     */
     public void record(String userId1, String userId2) {
         if (userId1.equals(userId2)) return;
-
         Instant now = Instant.now();
-
-        interactions.computeIfAbsent(userId1, k -> new ConcurrentHashMap<>())
-                .put(userId2, now);
-
-        interactions.computeIfAbsent(userId2, k -> new ConcurrentHashMap<>())
-                .put(userId1, now);
+        recordOne(userId1, userId2, now);
+        recordOne(userId2, userId1, now);
     }
-
-    /**
-     * 최근 N일 내 상호작용 유저 목록
-     */
+    private void recordOne(String userId, String targetUserId, Instant now) {
+        UserInteraction interaction = repository.findByUserIdAndTargetUserId(userId, targetUserId)
+                .orElseGet(() -> new UserInteraction(userId, targetUserId));
+        interaction.recordAt(now);
+        repository.save(interaction);
+    }
     public Set<String> getRecent(String userId, int days) {
-        Map<String, Instant> userInteractions = interactions.get(userId);
-        if (userInteractions == null) return Collections.emptySet();
-
-        Instant cutoff = Instant.now().minus(days, ChronoUnit.DAYS);
-
-        return userInteractions.entrySet().stream()
-                .filter(e -> e.getValue().isAfter(cutoff))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        return repository.findByUserIdAndLastInteractionAtAfter(userId, Instant.now().minus(days, java.time.temporal.ChronoUnit.DAYS))
+                .stream().map(UserInteraction::getTargetUserId).collect(java.util.stream.Collectors.toSet());
     }
 }

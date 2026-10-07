@@ -1,19 +1,36 @@
 package com.achat.report;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.UUID;
 
-public class Report {
-    private final String id;
-    private final String reporterId;
-    private final ReportType targetType;
-    private final String targetId;
-    private final ReportReason reason;
+@Entity
+@Table(name = "reports", indexes = @Index(columnList = "target_type,target_id"))
+public class Report extends JpaEntity {
+    protected Report() {}
+
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String reporterId;
+    @Enumerated(EnumType.STRING)
+    private ReportType targetType;
+    @Column(length = 36)
+    private String targetId;
+    @Enumerated(EnumType.STRING)
+    private ReportReason reason;
+    @Column(columnDefinition = "TEXT")
     private String description;
+    @Enumerated(EnumType.STRING)
     private ReportStatus status;
-    private final String roomId;  // 신고가 발생한 방 (nullable)
-    private final Instant createdAt;
+    @Column(length = 36)
+    private String roomId;  // 신고가 발생한 방 (nullable)
+    private Instant createdAt;
     private Instant resolvedAt;
+    @Column(columnDefinition = "TEXT")
     private String adminNote;  // 관리자 메모
 
     public Report(String reporterId, ReportType targetType, String targetId,

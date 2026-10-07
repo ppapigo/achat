@@ -1,10 +1,13 @@
 package com.achat.like;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.post.Post;
 import com.achat.post.PostStore;
 import org.springframework.stereotype.Service;
 
 @Service
+@Transactional
 public class LikeService {
 
     private final LikeStore likeStore;

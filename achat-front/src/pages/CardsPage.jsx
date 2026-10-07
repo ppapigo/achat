@@ -1,0 +1,12 @@
+import { Sparkles, UserPlus } from 'lucide-react';
+import { api } from '../lib/api.js';
+import { tiers, date } from '../lib/format.js';
+import { useResource } from '../hooks/useResource.js';
+import { useToast } from '../contexts/ToastContext.jsx';
+import { ActionButton, Avatar, Empty, PageHeading, ResourceState, SectionHeading } from '../components/UI.jsx';
+
+export default function CardsPage() {
+  const cards = useResource('/api/cards/my'); const status = useResource('/api/cards/status'); const notify = useToast();
+  function reload() { cards.reload(); status.reload(); }
+  return <><PageHeading eyebrow="A HAPPY LITTLE SURPRISE" title="오늘의 프로필 카드" description="우연히 만난 한 장의 카드가 새로운 친구가 될지도 몰라요." /><div className="draw-banner"><span className="draw-art" aria-hidden="true"><Sparkles size={38} />A</span><div><span className="eyebrow">TODAY’S CONNECTION</span><h2>오늘은 누구를 만나게 될까요?</h2><p>{status.data?.drawnToday ? '오늘의 카드를 확인하고 인사를 건네보세요.' : '하루에 한 번, 새로운 사람의 프로필 카드를 뽑아요.'}</p></div><ResourceState resource={status}><ActionButton className="button" disabled={!status.data || status.data.remainingDraws < 1} action={() => api.request('/api/cards/draw', { method: 'POST' })} onSuccess={(result) => { reload(); if (result.success) notify('새로운 프로필 카드를 만났어요.'); else notify(result.alreadyDrawnToday ? '오늘의 카드를 이미 뽑았어요.' : '아직 만날 수 있는 새로운 사용자가 없어요.', 'error'); }}><Sparkles size={17} />{status.data?.remainingDraws > 0 ? '오늘의 카드 뽑기' : '오늘 뽑기 완료'}</ActionButton></ResourceState></div><SectionHeading title={`모아둔 인연 ${cards.data?.length ?? ''}`} /><ResourceState resource={cards}>{cards.data?.length ? <div className="profile-card-grid">{cards.data.map((card) => <article className="panel profile-card" key={card.cardId}><div className="profile-card-top"><span className="badge">{tiers[card.tier] || card.tier}</span><span className={`status-dot ${card.isOnline ? '' : 'offline'}`} /></div><Avatar name={card.username} size="large" /><h2>{card.username}</h2><p>레벨 {card.level} · {card.rp} RP</p><small>{date(card.drawnDate)}에 만난 인연</small>{card.isFriend ? <span className="badge soft">우리, 이미 친구예요</span> : <ActionButton className="button secondary wide" action={() => api.request('/api/friends/request', { method: 'POST', body: { username: card.username } })} onSuccess={() => notify('친구 요청을 보냈어요.')}><UserPlus size={16} />친구 요청</ActionButton>}</article>)}</div> : <div className="panel"><Empty title="첫 번째 인연을 기다려요" description="오늘의 카드를 뽑아 컬렉션을 시작해보세요." /></div>}</ResourceState></>;
+}

@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:h2:mem:achat-test;MODE=MySQL;DB_CLOSE_DELAY=-1}
+    username: ${TEST_DB_USERNAME:sa}
+    password: ${TEST_DB_PASSWORD:}
+    driver-class-name: ${TEST_DB_DRIVER:org.h2.Driver}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  jwt:
+    secret: achat-test-secret-key-minimum-256-bits-for-hs256-algorithm
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+  verification:
+    code-expiration-ms: 300000

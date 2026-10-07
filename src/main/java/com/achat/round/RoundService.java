@@ -1,5 +1,7 @@
 package com.achat.round;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.augment.AugmentService;
 import com.achat.augment.AugmentStore;
 import com.achat.history.GameHistoryService;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class RoundService {
 
     private final RoundStore roundStore;
@@ -43,7 +46,6 @@ public class RoundService {
         this.rankService = rankService;
         this.augmentService = augmentService;
         this.gameHistoryService = gameHistoryService;
-        this.roundScheduler.setRoundService(this);
     }
 
     public RoundResponse startRound(String roomId, String odLRXnwB, StartRoundRequest request) {

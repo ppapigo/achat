@@ -1,5 +1,7 @@
 package com.achat.feed;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.friend.FriendStore;
 import com.achat.like.LikeStore;
 import com.achat.post.Post;
@@ -15,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class FeedService {
 
     private static final int INTERACTION_DAYS = 7;

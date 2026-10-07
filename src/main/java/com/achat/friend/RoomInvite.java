@@ -1,21 +1,34 @@
 package com.achat.friend;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.UUID;
 
-public class RoomInvite {
+@Entity
+@Table(name = "room_invites", indexes = @Index(columnList = "to_user_id,status,expires_at"))
+public class RoomInvite extends JpaEntity {
+    protected RoomInvite() {}
+
 
     public enum Status {
         PENDING, ACCEPTED, REJECTED, EXPIRED
     }
 
-    private final String id;
-    private final String fromUserId;
-    private final String toUserId;
-    private final String roomId;
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String fromUserId;
+    @Column(length = 36)
+    private String toUserId;
+    @Column(length = 36)
+    private String roomId;
+    @Enumerated(EnumType.STRING)
     private Status status;
-    private final Instant createdAt;
-    private final Instant expiresAt;
+    private Instant createdAt;
+    private Instant expiresAt;
 
     public RoomInvite(String fromUserId, String toUserId, String roomId) {
         this.id = UUID.randomUUID().toString();

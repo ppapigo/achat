@@ -7,29 +7,31 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.stream.Collectors;
 
 @Component
+@Transactional
 public class RoomRankStore {
 
-    private final Map<String, RoomRank> ranks = new ConcurrentHashMap<>();
+    private final RoomRankRepository repository;
     private final RoomStore roomStore;
 
-    public RoomRankStore(RoomStore roomStore) {
+    public RoomRankStore(RoomStore roomStore, RoomRankRepository repository) {
+        this.repository = repository;
         this.roomStore = roomStore;
     }
 
     public RoomRank getOrCreate(String roomId) {
-        return ranks.computeIfAbsent(roomId, RoomRank::new);
+        return repository.findById(roomId).orElseGet(() -> repository.save(new RoomRank(roomId)));
     }
 
     public Optional<RoomRank> findByRoomId(String roomId) {
-        return Optional.ofNullable(ranks.get(roomId));
+        return repository.findById(roomId);
     }
 
     public void save(RoomRank rank) {
-        ranks.put(rank.getRoomId(), rank);
+        repository.save(rank);
     }
 
     /**
@@ -91,12 +93,12 @@ public class RoomRankStore {
     // === Helper 메서드 ===
 
     private java.util.stream.Stream<RoomRank> getPermanentRooms() {
-        return ranks.values().stream()
+        return repository.findAll().stream()
                 .filter(this::isPermanentRoom);
     }
 
     private java.util.stream.Stream<RoomRankPair> getPermanentRoomsWithRoom() {
-        return ranks.values().stream()
+        return repository.findAll().stream()
                 .map(rank -> roomStore.findById(rank.getRoomId())
                         .filter(Room::isPermanentRoom)
                         .map(room -> new RoomRankPair(rank, room))

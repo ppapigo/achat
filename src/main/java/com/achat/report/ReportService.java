@@ -1,5 +1,7 @@
 package com.achat.report;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.board.BoardService;
 import com.achat.sanction.SanctionService;
 import com.achat.sanction.SanctionType;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@Transactional
 public class ReportService {
 
     private final ReportStore reportStore;

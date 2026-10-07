@@ -1,72 +1,59 @@
 package com.achat.minihome;
 
+import com.achat.like.ContentLike;
+import com.achat.like.ContentLikeRepository;
 import com.achat.post.Post;
 import com.achat.post.PostStore;
 import com.achat.post.PostType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class MiniHomeService {
-
-    private final Map<String, MiniHomePost> posts = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> likes = new ConcurrentHashMap<>();
-
+    private final MiniHomePostRepository repository;
+    private final ContentLikeRepository likeRepository;
     private final PostStore postStore;
 
-    public MiniHomeService(PostStore postStore) {
-        this.postStore = postStore;
-    }
-
     public MiniHomePost createPost(String userId, String content) {
-        String id = UUID.randomUUID().toString();
-        MiniHomePost miniPost = new MiniHomePost(id, userId, content);
-        posts.put(id, miniPost);
-
-        // ⭐ 피드에도 추가!
         Post feedPost = new Post(userId, PostType.FREE, content);
         postStore.save(feedPost);
-
-        return miniPost;
+        return repository.save(new MiniHomePost(feedPost.getId(), userId, content));
     }
 
+    @Transactional(readOnly = true)
     public List<MiniHomePost> getPostsByUser(String userId, int limit) {
-        return posts.values().stream()
-                .filter(p -> p.getAuthorId().equals(userId))
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .limit(limit)
-                .toList();
+        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(userId, PageRequest.of(0, limit));
     }
 
     public boolean toggleLike(String postId, String userId) {
-        MiniHomePost post = posts.get(postId);
+        MiniHomePost post = repository.findById(postId).orElse(null);
         if (post == null) return false;
-
-        Set<String> postLikes = likes.computeIfAbsent(postId, k -> new HashSet<>());
-
-        if (postLikes.contains(userId)) {
-            postLikes.remove(userId);
+        var like = likeRepository.findByTargetTypeAndTargetIdAndUserId(ContentLike.TargetType.MINI_HOME, postId, userId);
+        if (like.isPresent()) {
+            likeRepository.delete(like.get());
             post.removeLike();
             return false;
-        } else {
-            postLikes.add(userId);
-            post.addLike();
-            return true;
         }
+        likeRepository.save(new ContentLike(ContentLike.TargetType.MINI_HOME, postId, userId));
+        post.addLike();
+        return true;
     }
 
+    @Transactional(readOnly = true)
     public boolean isLiked(String postId, String userId) {
-        return likes.getOrDefault(postId, Set.of()).contains(userId);
+        return likeRepository.existsByTargetTypeAndTargetIdAndUserId(ContentLike.TargetType.MINI_HOME, postId, userId);
     }
 
     public void deletePost(String postId, String userId) {
-        MiniHomePost post = posts.get(postId);
-        if (post != null && post.getAuthorId().equals(userId)) {
-            posts.remove(postId);
-            likes.remove(postId);
+        repository.findById(postId).filter(p -> p.getAuthorId().equals(userId)).ifPresent(post -> {
+            likeRepository.deleteByTargetTypeAndTargetId(ContentLike.TargetType.MINI_HOME, postId);
+            repository.delete(post);
             postStore.delete(postId);
-        }
+        });
     }
 }

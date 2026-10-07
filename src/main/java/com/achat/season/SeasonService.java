@@ -1,5 +1,7 @@
 package com.achat.season;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.room.Room;
 import com.achat.room.RoomStore;
 import com.achat.user.User;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Transactional
 public class SeasonService {
 
     private final SeasonStore seasonStore;
@@ -22,17 +25,18 @@ public class SeasonService {
         this.seasonStore = seasonStore;
         this.userStore = userStore;
         this.roomStore = roomStore;
-        initializeFirstSeason();
     }
 
-    private void initializeFirstSeason() {
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void initializeFirstSeason() {
         if (seasonStore.getCurrentSeason() == null) {
             Instant start = Instant.now();
             Instant end = start.plus(30, ChronoUnit.DAYS);
-            Season season = new Season(1, "시즌 1", start, end);
+            int seasonId = seasonStore.getNextSeasonId();
+            Season season = new Season(seasonId, "시즌 " + seasonId, start, end);
             seasonStore.saveSeason(season);
             assignSeasonToRooms(season.getId());
-            System.out.println("📅 시즌 1 시작: " + start + " ~ " + end);
+            System.out.println("📅 " + season.getName() + " 시작: " + start + " ~ " + end);
         }
     }
 

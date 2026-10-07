@@ -1,20 +1,33 @@
 package com.achat.season;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import com.achat.rank.Tier;
 import java.time.Instant;
 
-public class UserSeasonHistory {
-    private final String odUserId;  // 수정: userId → odUserId
-    private final int seasonId;
-    private final int finalRp;
-    private final Tier finalTier;
-    private final Tier highestTier;
-    private final int rewardCoins;
-    private final Instant recordedAt;
+@Entity
+@Table(name = "user_season_histories", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "season_id"}))
+public class UserSeasonHistory extends JpaEntity {
+    protected UserSeasonHistory() {}
 
-    public UserSeasonHistory(String odUserId, int seasonId, int finalRp,
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(length = 36)
+    private String userId;
+    private int seasonId;
+    private int finalRp;
+    @Enumerated(EnumType.STRING)
+    private Tier finalTier;
+    @Enumerated(EnumType.STRING)
+    private Tier highestTier;
+    private int rewardCoins;
+    private Instant recordedAt;
+
+    public UserSeasonHistory(String userId, int seasonId, int finalRp,
                              Tier finalTier, Tier highestTier, int rewardCoins) {
-        this.odUserId = odUserId;  // 수정!
+        this.userId = userId;
         this.seasonId = seasonId;
         this.finalRp = finalRp;
         this.finalTier = finalTier;
@@ -23,7 +36,7 @@ public class UserSeasonHistory {
         this.recordedAt = Instant.now();
     }
 
-    public String getUserId() { return odUserId; }  // getter는 getUserId 유지
+    public String getUserId() { return userId; }  // getter는 getUserId 유지
     public int getSeasonId() { return seasonId; }
     public int getFinalRp() { return finalRp; }
     public Tier getFinalTier() { return finalTier; }

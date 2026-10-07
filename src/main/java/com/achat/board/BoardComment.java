@@ -1,15 +1,27 @@
 package com.achat.board;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.LocalDateTime;
 
-public class BoardComment {
+@Entity
+@Table(name = "board_comments", indexes = @Index(columnList = "board_id,created_at"))
+public class BoardComment extends JpaEntity {
+    protected BoardComment() {}
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long boardId;
     private Long parentId;
+    @Column(length = 36)
     private String authorId;
     private String authorNickname;
+    @Column(columnDefinition = "TEXT")
     private String content;
     private boolean hidden;  // ✅ 추가
+    @Column(columnDefinition = "TEXT")
     private String hiddenReason;  // ✅ 추가
     private LocalDateTime createdAt;
 

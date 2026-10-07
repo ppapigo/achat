@@ -1,12 +1,20 @@
 package com.achat.season;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 
-public class Season {
-    private final int id;
-    private final String name;
-    private final Instant startDate;
-    private final Instant endDate;
+@Entity
+@Table(name = "seasons")
+public class Season extends JpaEntity {
+    protected Season() {}
+
+    @Id
+    private int id;
+    private String name;
+    private Instant startDate;
+    private Instant endDate;
     private boolean active;
 
     public Season(int id, String name, Instant startDate, Instant endDate) {

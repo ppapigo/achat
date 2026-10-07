@@ -1,5 +1,7 @@
 package com.achat.quest;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.user.UserStore;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 
 @Service
+@Transactional
 public class QuestService {
 
     private final QuestStore questStore;

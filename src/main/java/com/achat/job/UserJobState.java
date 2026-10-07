@@ -1,7 +1,17 @@
 package com.achat.job;
 
-public class UserJobState {
-    private final String userId;
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
+@Entity
+@Table(name = "user_job_states")
+public class UserJobState extends JpaEntity {
+    protected UserJobState() {}
+
+    @Id
+    @Column(length = 36)
+    private String userId;
+    @Enumerated(EnumType.STRING)
     private JobType currentJob;
     private int level;
     private int exp;

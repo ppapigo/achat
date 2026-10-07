@@ -1,53 +1,20 @@
 package com.achat.home;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+import java.time.*;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Home 메모리 저장소
- */
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class HomeStore {
+    private final HomeRepository repository;
 
-    // userId -> Home
-    private final Map<String, Home> homes = new ConcurrentHashMap<>();
-
-    /**
-     * Home 저장
-     */
-    public void save(Home home) {
-        homes.put(home.getUserId(), home);
-    }
-
-    /**
-     * Home 조회 (없으면 생성)
-     */
-    public Home findOrCreate(String userId) {
-        return homes.computeIfAbsent(userId, Home::new);
-    }
-
-    /**
-     * Home 조회
-     */
-    public Optional<Home> findByUserId(String userId) {
-        return Optional.ofNullable(homes.get(userId));
-    }
-
-    /**
-     * Home 존재 여부
-     */
-    public boolean exists(String userId) {
-        return homes.containsKey(userId);
-    }
-
-    /**
-     * 방문수 증가
-     */
-    public void incrementVisit(String userId) {
-        Home home = findOrCreate(userId);
-        home.incrementVisitCount();
-    }
+    public void save(Home home) { repository.save(home); }
+    public Home findOrCreate(String userId) { return repository.findById(userId).orElseGet(() -> repository.save(new Home(userId))); }
+    public Optional<Home> findByUserId(String userId) { return repository.findById(userId); }
+    public boolean exists(String userId) { return repository.existsById(userId); }
+    public void incrementVisit(String userId) { findOrCreate(userId).incrementVisitCount(); }
 }

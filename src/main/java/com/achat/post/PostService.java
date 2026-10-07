@@ -1,5 +1,7 @@
 package com.achat.post;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.like.LikeStore;
 import com.achat.post.dto.PostDto.CreatePostRequest;
 import com.achat.post.dto.PostDto.PostResponse;
@@ -12,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class PostService {
 
     private static final Duration POST_COOLDOWN = Duration.ofMinutes(3);

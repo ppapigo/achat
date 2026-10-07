@@ -1,18 +1,31 @@
 package com.achat.board;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.LocalDateTime;
 
-public class Board {
+@Entity
+@Table(name = "boards", indexes = @Index(columnList = "hidden,category,created_at"))
+public class Board extends JpaEntity {
+    protected Board() {}
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(length = 36)
     private String authorId;
     private String authorNickname;
+    @Enumerated(EnumType.STRING)
     private BoardCategory category;
     private String title;
+    @Column(columnDefinition = "TEXT")
     private String content;
     private int viewCount;
     private int likeCount;
     private int commentCount;
     private boolean hidden;  // ✅ 추가
+    @Column(columnDefinition = "TEXT")
     private String hiddenReason;  // ✅ 추가
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

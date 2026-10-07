@@ -1,5 +1,7 @@
 package com.achat.room;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.common.ApiResponse;
 import com.achat.friend.FriendStore;
 import com.achat.user.User;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@Transactional
 @RequestMapping("/api/party")
 public class PartyController {
 

@@ -1,25 +1,18 @@
 package com.achat.job;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class JobStore {
+    private final UserJobStateRepository repository;
 
-    private final Map<String, UserJobState> states = new ConcurrentHashMap<>();
-
-    public UserJobState getOrCreate(String odUserId) {
-        return states.computeIfAbsent(odUserId, UserJobState::new);
-    }
-
-    public Optional<UserJobState> find(String odUserId) {
-        return Optional.ofNullable(states.get(odUserId));
-    }
-
-    public void save(UserJobState state) {
-        states.put(state.getUserId(), state);
-    }
+    public UserJobState getOrCreate(String userId) { return repository.findById(userId).orElseGet(() -> repository.save(new UserJobState(userId))); }
+    public Optional<UserJobState> find(String userId) { return repository.findById(userId); }
+    public void save(UserJobState state) { repository.save(state); }
 }

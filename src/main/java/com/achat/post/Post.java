@@ -1,19 +1,35 @@
 package com.achat.post;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class Post {
+@Entity
+@Table(name = "posts", indexes = @Index(columnList = "author_id,created_at"))
+public class Post extends JpaEntity {
+    protected Post() {}
 
-    private final String id;
-    private final String authorId;
-    private final PostType type;
+
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String authorId;
+    @Enumerated(EnumType.STRING)
+    private PostType type;
+    @Column(columnDefinition = "TEXT")
     private String content;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "post_tags", joinColumns = @JoinColumn(name = "post_id"))
+    @OrderColumn(name = "tag_index")
+    @Column(name = "tag")
     private List<String> tags;
     private long likeCount;
-    private final Instant createdAt;
+    private Instant createdAt;
     private Instant updatedAt;
 
     public Post(String authorId, PostType type, String content) {

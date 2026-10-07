@@ -1,37 +1,25 @@
 package com.achat.message;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class MessageStore {
+    private final MessageRepository repository;
 
-    private final Map<String, List<Message>> messagesByRoom = new ConcurrentHashMap<>();
-    private final Map<String, Message> messagesById = new ConcurrentHashMap<>();  // 추가!
-
-    public void save(Message message) {
-        messagesByRoom
-                .computeIfAbsent(message.getRoomId(),
-                        k -> Collections.synchronizedList(new ArrayList<>()))
-                .add(message);
-
-        messagesById.put(message.getId(), message);  // 추가!
-    }
-
-    public List<Message> findByRoomId(String roomId) {
-        List<Message> messages = messagesByRoom.get(roomId);
-        if (messages == null) {
-            return List.of();
-        }
-        synchronized (messages) {
-            return new ArrayList<>(messages);
-        }
-    }
-
-    // 추가!
-    public Optional<Message> findById(String messageId) {
-        return Optional.ofNullable(messagesById.get(messageId));
+    public void save(Message message) { repository.save(message); }
+    public List<Message> findByRoomId(String roomId) { return repository.findByRoomIdOrderByCreatedAtAsc(roomId); }
+    public Optional<Message> findById(String id) { return repository.findById(id); }
+    public List<Message> findRecentByRoomId(String roomId, int limit) {
+        List<Message> recent = new ArrayList<>(repository.findByRoomIdOrderByCreatedAtDescIdDesc(
+                roomId, PageRequest.of(0, Math.max(1, Math.min(100, limit)))));
+        Collections.reverse(recent);
+        return recent;
     }
 }

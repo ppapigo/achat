@@ -19,7 +19,8 @@ public class RoundScheduler {
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
     private RoundService roundService;
 
-    public void setRoundService(RoundService roundService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setRoundService(@org.springframework.context.annotation.Lazy RoundService roundService) {
         this.roundService = roundService;
     }
 

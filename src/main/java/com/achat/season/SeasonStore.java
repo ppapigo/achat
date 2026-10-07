@@ -1,47 +1,23 @@
 package com.achat.season;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class SeasonStore {
+    private final SeasonRepository repository;
+    private final UserSeasonHistoryRepository historyRepository;
 
-    private final Map<Integer, Season> seasons = new ConcurrentHashMap<>();
-    private final Map<String, List<UserSeasonHistory>> userHistories = new ConcurrentHashMap<>();
-    private Season currentSeason;
-
-    public void saveSeason(Season season) {
-        seasons.put(season.getId(), season);
-        if (season.isActive()) {
-            currentSeason = season;
-        }
-    }
-
-    public Optional<Season> findById(int seasonId) {
-        return Optional.ofNullable(seasons.get(seasonId));
-    }
-
-    public Season getCurrentSeason() {
-        return currentSeason;
-    }
-
-    public void saveHistory(UserSeasonHistory history) {
-        userHistories
-                .computeIfAbsent(history.getUserId(), k -> new ArrayList<>())
-                .add(history);
-    }
-
-    public List<UserSeasonHistory> getUserHistory(String userId) {
-        return userHistories.getOrDefault(userId, List.of());
-    }
-
-    public int getNextSeasonId() {
-        return seasons.size() + 1;
-    }
-
-    // 추가!
-    public List<Season> getAllSeasons() {
-        return new ArrayList<>(seasons.values());
-    }
+    public void saveSeason(Season season) { repository.save(season); }
+    public Optional<Season> findById(int id) { return repository.findById(id); }
+    public Season getCurrentSeason() { return repository.findFirstByActiveTrueOrderByIdDesc().orElse(null); }
+    public void saveHistory(UserSeasonHistory history) { historyRepository.save(history); }
+    public List<UserSeasonHistory> getUserHistory(String userId) { return historyRepository.findByUserIdOrderByRecordedAtAsc(userId); }
+    public int getNextSeasonId() { return repository.findFirstByOrderByIdDesc().map(s -> s.getId() + 1).orElse(1); }
+    public List<Season> getAllSeasons() { return repository.findAllByOrderByIdAsc(); }
 }

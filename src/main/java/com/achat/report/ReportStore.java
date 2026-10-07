@@ -1,107 +1,29 @@
 package com.achat.report;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import java.time.*;
 
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class ReportStore {
+    private final ReportRepository repository;
 
-    private final Map<String, Report> reports = new ConcurrentHashMap<>();
-
-    // 타입별 인덱스
-    private final Map<String, List<String>> userReports = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> roomReports = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> postReports = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> commentReports = new ConcurrentHashMap<>();  // 추가!
-    private final Map<String, List<String>> reporterReports = new ConcurrentHashMap<>();
-
-    public void save(Report report) {
-        reports.put(report.getId(), report);
-
-        // 타입별 인덱스 업데이트
-        switch (report.getTargetType()) {
-            case USER -> userReports.computeIfAbsent(report.getTargetId(), k -> new ArrayList<>())
-                    .add(report.getId());
-            case ROOM -> roomReports.computeIfAbsent(report.getTargetId(), k -> new ArrayList<>())
-                    .add(report.getId());
-            case POST -> postReports.computeIfAbsent(report.getTargetId(), k -> new ArrayList<>())
-                    .add(report.getId());
-            case COMMENT -> commentReports.computeIfAbsent(report.getTargetId(), k -> new ArrayList<>())
-                    .add(report.getId());
-        }
-
-        reporterReports.computeIfAbsent(report.getReporterId(), k -> new ArrayList<>())
-                .add(report.getId());
-    }
-
-    public Optional<Report> findById(String id) {
-        return Optional.ofNullable(reports.get(id));
-    }
-
-    public int getUserReportCount(String userId) {
-        return userReports.getOrDefault(userId, List.of()).size();
-    }
-
-    public int getRoomReportCount(String roomId) {
-        return roomReports.getOrDefault(roomId, List.of()).size();
-    }
-
-    public int getPostReportCount(String postId) {
-        return postReports.getOrDefault(postId, List.of()).size();
-    }
-
-    public int getCommentReportCount(String commentId) {
-        return commentReports.getOrDefault(commentId, List.of()).size();
-    }
-
+    public void save(Report report) { repository.save(report); }
+    public Optional<Report> findById(String id) { return repository.findById(id); }
+    public int getUserReportCount(String id) { return count(ReportType.USER, id); }
+    public int getRoomReportCount(String id) { return count(ReportType.ROOM, id); }
+    public int getPostReportCount(String id) { return count(ReportType.POST, id); }
+    public int getCommentReportCount(String id) { return count(ReportType.COMMENT, id); }
+    private int count(ReportType type, String id) { return Math.toIntExact(repository.countByTargetTypeAndTargetId(type, id)); }
     public boolean hasRecentReport(String reporterId, String targetId) {
-        List<String> myReports = reporterReports.getOrDefault(reporterId, List.of());
-        Instant oneDayAgo = Instant.now().minus(Duration.ofHours(24));
-
-        return myReports.stream()
-                .map(reports::get)
-                .filter(Objects::nonNull)
-                .filter(r -> r.getTargetId().equals(targetId))
-                .anyMatch(r -> r.getCreatedAt().isAfter(oneDayAgo));
+        return repository.existsByReporterIdAndTargetIdAndCreatedAtAfter(reporterId, targetId, Instant.now().minus(Duration.ofHours(24)));
     }
-
-    public List<Report> findByReporterId(String reporterId) {
-        return reporterReports.getOrDefault(reporterId, List.of()).stream()
-                .map(reports::get)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Report::getCreatedAt).reversed())
-                .collect(Collectors.toList());
-    }
-
-    public List<Report> findByStatus(ReportStatus status) {
-        return reports.values().stream()
-                .filter(r -> r.getStatus() == status)
-                .sorted(Comparator.comparing(Report::getCreatedAt).reversed())
-                .collect(Collectors.toList());
-    }
-
-    public List<Report> findAll() {
-        return reports.values().stream()
-                .sorted(Comparator.comparing(Report::getCreatedAt).reversed())
-                .collect(Collectors.toList());
-    }
-
-    public List<Report> findByTargetId(String targetId) {
-        List<String> all = new ArrayList<>();
-        all.addAll(userReports.getOrDefault(targetId, List.of()));
-        all.addAll(roomReports.getOrDefault(targetId, List.of()));
-        all.addAll(postReports.getOrDefault(targetId, List.of()));
-        all.addAll(commentReports.getOrDefault(targetId, List.of()));
-
-        return all.stream()
-                .map(reports::get)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Report::getCreatedAt).reversed())
-                .collect(Collectors.toList());
-    }
+    public List<Report> findByReporterId(String id) { return repository.findByReporterIdOrderByCreatedAtDesc(id); }
+    public List<Report> findByStatus(ReportStatus status) { return repository.findByStatusOrderByCreatedAtDesc(status); }
+    public List<Report> findAll() { return repository.findAllByOrderByCreatedAtDesc(); }
+    public List<Report> findByTargetId(String id) { return repository.findByTargetIdOrderByCreatedAtDesc(id); }
 }

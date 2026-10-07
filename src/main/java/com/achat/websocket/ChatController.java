@@ -1,5 +1,7 @@
 package com.achat.websocket;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.augment.AugmentService;
 import com.achat.message.Message;
 import com.achat.message.MessageCooldownStore;
@@ -26,6 +28,7 @@ import java.security.Principal;
 import java.util.Map;
 
 @Controller
+@Transactional
 public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;

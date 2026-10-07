@@ -1,5 +1,6 @@
 ﻿# Java/Gradle
 .gradle/
+.gradle-user-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
@@ -8,6 +9,7 @@ node_modules/
 .next/
 .expo/
 dist/
+achat-front/test-results/
 
 # IDE
 .idea/

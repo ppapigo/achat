@@ -1,79 +1,46 @@
 package com.achat.post;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.time.LocalDate;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
+import java.time.*;
+import com.achat.feed.FeedCommentRepository;
+import com.achat.like.ContentLike;
+import com.achat.like.ContentLikeRepository;
 @Component
+@Transactional
+@RequiredArgsConstructor
 public class PostStore {
-
-    private final Map<String, Post> posts = new ConcurrentHashMap<>();
-    private final Map<String, List<String>> authorPosts = new ConcurrentHashMap<>();
-    private final Map<String, Instant> lastPostTime = new ConcurrentHashMap<>();
-    private final Map<String, Integer> dailyCount = new ConcurrentHashMap<>();
-    private LocalDate lastResetDate = LocalDate.now();
+    private final PostRepository repository;
+    private final PostQuotaRepository quotaRepository;
+    private final FeedCommentRepository commentRepository;
+    private final ContentLikeRepository likeRepository;
 
     public void save(Post post) {
-        posts.put(post.getId(), post);
-        authorPosts.computeIfAbsent(post.getAuthorId(), k -> new ArrayList<>())
-                .add(0, post.getId());
-        lastPostTime.put(post.getAuthorId(), Instant.now());
-        dailyCount.merge(post.getAuthorId(), 1, Integer::sum);
+        boolean newPost = !repository.existsById(post.getId());
+        repository.save(post);
+        if (newPost) {
+            PostQuota quota = quotaRepository.findById(post.getAuthorId()).orElseGet(() -> new PostQuota(post.getAuthorId()));
+            quota.recordPost();
+            quotaRepository.save(quota);
+        }
     }
-
-    public Optional<Post> findById(String postId) {
-        return Optional.ofNullable(posts.get(postId));
-    }
-
+    public Optional<Post> findById(String id) { return repository.findById(id); }
     public List<Post> findByAuthorId(String authorId, int limit) {
-        resetDailyCountIfNeeded();
-        List<String> postIds = authorPosts.getOrDefault(authorId, Collections.emptyList());
-        return postIds.stream()
-                .limit(limit)
-                .map(posts::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(authorId, PageRequest.of(0, limit));
     }
-
     public List<Post> findByAuthorIds(Set<String> authorIds, int limit) {
-        return authorIds.stream()
-                .flatMap(id -> authorPosts.getOrDefault(id, Collections.emptyList()).stream())
-                .map(posts::get)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Post::getCreatedAt).reversed())
-                .limit(limit)
-                .collect(Collectors.toList());
+        return limit <= 0 || authorIds.isEmpty() ? List.of() : repository.findByAuthorIdInOrderByCreatedAtDesc(authorIds, PageRequest.of(0, limit));
     }
-
-    // ⭐ 추가!
     public void delete(String postId) {
-        Post post = posts.remove(postId);
-        if (post != null) {
-            List<String> authorPostIds = authorPosts.get(post.getAuthorId());
-            if (authorPostIds != null) {
-                authorPostIds.remove(postId);
-            }
-        }
+        commentRepository.deleteByPostId(postId);
+        likeRepository.deleteByTargetTypeAndTargetId(ContentLike.TargetType.POST, postId);
+        repository.deleteById(postId);
     }
-
     public Optional<Instant> getLastPostTime(String authorId) {
-        return Optional.ofNullable(lastPostTime.get(authorId));
+        return quotaRepository.findById(authorId).map(PostQuota::getLastPostAt);
     }
-
-    public int getDailyCount(String authorId) {
-        resetDailyCountIfNeeded();
-        return dailyCount.getOrDefault(authorId, 0);
-    }
-
-    private void resetDailyCountIfNeeded() {
-        LocalDate today = LocalDate.now();
-        if (!today.equals(lastResetDate)) {
-            dailyCount.clear();
-            lastResetDate = today;
-        }
-    }
+    public int getDailyCount(String authorId) { return quotaRepository.findById(authorId).map(PostQuota::getDailyCount).orElse(0); }
 }

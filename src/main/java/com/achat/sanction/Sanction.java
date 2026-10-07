@@ -1,17 +1,30 @@
 package com.achat.sanction;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.UUID;
 
-public class Sanction {
-    private final String id;
-    private final String userId;
-    private final SanctionType type;
-    private final String reason;
-    private final String reportId;  // 관련 신고 ID (nullable)
-    private final String issuedBy;  // 관리자 ID
-    private final Instant issuedAt;
-    private final Instant expiresAt; // null이면 영구
+@Entity
+@Table(name = "sanctions", indexes = @Index(columnList = "user_id,issued_at"))
+public class Sanction extends JpaEntity {
+    protected Sanction() {}
+
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String userId;
+    @Enumerated(EnumType.STRING)
+    private SanctionType type;
+    @Column(columnDefinition = "TEXT")
+    private String reason;
+    @Column(length = 36)
+    private String reportId;  // 관련 신고 ID (nullable)
+    private String issuedBy;  // 관리자 ID
+    private Instant issuedAt;
+    private Instant expiresAt; // null이면 영구
     private boolean isActive;
 
     public Sanction(String userId, SanctionType type, String reason,

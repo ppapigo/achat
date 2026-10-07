@@ -1,13 +1,22 @@
 package com.achat.roomrank;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 
 /**
  * 영구방 순위 데이터
  */
-public class RoomRank {
+@Entity
+@Table(name = "room_ranks")
+public class RoomRank extends JpaEntity {
+    protected RoomRank() {}
 
-    private final String roomId;
+
+    @Id
+    @Column(length = 36)
+    private String roomId;
 
     // 개별 점수
     private int activityScore;      // 활동 점수

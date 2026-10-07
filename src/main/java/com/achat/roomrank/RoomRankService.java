@@ -1,5 +1,7 @@
 package com.achat.roomrank;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.room.Room;
 import com.achat.room.RoomStore;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class RoomRankService {
 
     private final RoomRankStore roomRankStore;

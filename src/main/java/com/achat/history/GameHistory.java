@@ -1,30 +1,41 @@
 package com.achat.history;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-public class GameHistory {
-    private final String id;
-    private final String odUserId;
-    private final String roomId;
-    private final String roomName;
-    private final boolean isMatchRoom;
-    private final int playerCount;
-    private final int rank;           // 1등, 2등, ...
-    private final int totalPoints;
-    private final int messageCount;
-    private final int rpChange;
-    private final int coinsEarned;
-    private final int expEarned;
-    private final String augmentUsed;
-    private final Instant playedAt;
+@Entity
+@Table(name = "game_histories", indexes = @Index(columnList = "user_id,played_at"))
+public class GameHistory extends JpaEntity {
+    protected GameHistory() {}
 
-    public GameHistory(String odUserId, String roomId, String roomName, boolean isMatchRoom,
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String userId;
+    @Column(length = 36)
+    private String roomId;
+    private String roomName;
+    private boolean isMatchRoom;
+    private int playerCount;
+    @Column(name = "finish_rank")
+    private int rank;           // 1등, 2등, ...
+    private int totalPoints;
+    private int messageCount;
+    private int rpChange;
+    private int coinsEarned;
+    private int expEarned;
+    private String augmentUsed;
+    private Instant playedAt;
+
+    public GameHistory(String userId, String roomId, String roomName, boolean isMatchRoom,
                        int playerCount, int rank, int totalPoints, int messageCount,
                        int rpChange, int coinsEarned, int expEarned, String augmentUsed) {
         this.id = UUID.randomUUID().toString();
-        this.odUserId = odUserId;
+        this.userId = userId;
         this.roomId = roomId;
         this.roomName = roomName;
         this.isMatchRoom = isMatchRoom;
@@ -41,7 +52,7 @@ public class GameHistory {
 
     // Getters
     public String getId() { return id; }
-    public String getUserId() { return odUserId; }
+    public String getUserId() { return userId; }
     public String getRoomId() { return roomId; }
     public String getRoomName() { return roomName; }
     public boolean isMatchRoom() { return isMatchRoom; }

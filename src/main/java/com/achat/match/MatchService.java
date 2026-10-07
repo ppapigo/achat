@@ -1,5 +1,7 @@
 package com.achat.match;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import com.achat.room.Room;
 import com.achat.room.RoomStore;
 import com.achat.round.RoundService;
@@ -14,6 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Transactional
 public class MatchService {
 
     private static final int MIN_PLAYERS = 6;

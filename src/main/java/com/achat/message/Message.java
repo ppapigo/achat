@@ -1,22 +1,39 @@
 package com.achat.message;
 
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
+
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class Message {
-    private final String id;
-    private final String roomId;
-    private final String senderId;
-    private final String senderTitle;  // 추가!
-    private final String content;
-    private final String appliedContent;
-    private final String appliedAugment;
-    private final Instant createdAt;
+@Entity
+@Table(name = "chat_messages", indexes = @Index(columnList = "room_id,created_at"))
+public class Message extends JpaEntity {
+    protected Message() {}
 
-    private final Set<String> likedByUserIds;
-    private final String replyToId;
+    @Id
+    @Column(length = 36)
+    private String id;
+    @Column(length = 36)
+    private String roomId;
+    @Column(length = 36)
+    private String senderId;
+    private String senderTitle;  // 추가!
+    @Column(columnDefinition = "TEXT")
+    private String content;
+    @Column(columnDefinition = "TEXT")
+    private String appliedContent;
+    private String appliedAugment;
+    private Instant createdAt;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "message_likes", joinColumns = @JoinColumn(name = "message_id"))
+    @Column(name = "user_id", length = 36)
+    private Set<String> likedByUserIds;
+    @Column(length = 36)
+    private String replyToId;
     private String replyToPreview;
 
     public Message(String roomId, String senderId, String senderTitle, String content,
