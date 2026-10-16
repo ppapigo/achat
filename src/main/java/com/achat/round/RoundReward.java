@@ -1,17 +1,16 @@
 package com.achat.round;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Map;
 
+@RequiredArgsConstructor
+@Getter
 public class RoundReward {
     private final int rank;
     private final int coins;
     private final int exp;
-
-    public RoundReward(int rank, int coins, int exp) {
-        this.rank = rank;
-        this.coins = coins;
-        this.exp = exp;
-    }
 
     // 순위별 보상 테이블
     private static final Map<Integer, RoundReward> REWARDS = Map.of(
@@ -26,8 +25,4 @@ public class RoundReward {
     public static RoundReward forRank(int rank) {
         return REWARDS.getOrDefault(rank, PARTICIPATION);
     }
-
-    public int getRank() { return rank; }
-    public int getCoins() { return coins; }
-    public int getExp() { return exp; }
 }

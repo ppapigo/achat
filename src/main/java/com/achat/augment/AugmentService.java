@@ -1,5 +1,7 @@
 package com.achat.augment;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.augment.dto.AugmentOptionResponse;
@@ -17,6 +19,7 @@ import java.util.Random;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AugmentService {
 
     private final AugmentStore augmentStore;
@@ -24,14 +27,6 @@ public class AugmentService {
     private final AugmentEffectRegistry effectRegistry;
     private final JobStore jobStore;
     private final Random random = new Random();  // 추가
-
-    public AugmentService(AugmentStore augmentStore, RoomStore roomStore,
-                          AugmentEffectRegistry effectRegistry, JobStore jobStore) {
-        this.augmentStore = augmentStore;
-        this.roomStore = roomStore;
-        this.effectRegistry = effectRegistry;
-        this.jobStore = jobStore;
-    }
 
     public AugmentOptionResponse getOptions(String roomId, String userId) {
         var stateOpt = augmentStore.find(userId, roomId);

@@ -1,5 +1,7 @@
 package com.achat.roomrank;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.room.Room;
 import com.achat.room.RoomStore;
 import org.springframework.stereotype.Component;
@@ -12,15 +14,11 @@ import java.util.stream.Collectors;
 
 @Component
 @Transactional
+@RequiredArgsConstructor
 public class RoomRankStore {
 
-    private final RoomRankRepository repository;
     private final RoomStore roomStore;
-
-    public RoomRankStore(RoomStore roomStore, RoomRankRepository repository) {
-        this.repository = repository;
-        this.roomStore = roomStore;
-    }
+    private final RoomRankRepository repository;
 
     public RoomRank getOrCreate(String roomId) {
         return repository.findById(roomId).orElseGet(() -> repository.save(new RoomRank(roomId)));

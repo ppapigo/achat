@@ -1,5 +1,7 @@
 package com.achat.shop;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.shop.dto.*;
 import jakarta.validation.Valid;
@@ -11,13 +13,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shop")
+@RequiredArgsConstructor
 public class ShopController {
 
     private final ShopService shopService;
-
-    public ShopController(ShopService shopService) {
-        this.shopService = shopService;
-    }
 
     // 상점 아이템 목록
     @GetMapping("/items")

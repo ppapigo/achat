@@ -1,5 +1,7 @@
 package com.achat.season;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,13 +10,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/seasons")
+@RequiredArgsConstructor
 public class SeasonController {
 
     private final SeasonService seasonService;
-
-    public SeasonController(SeasonService seasonService) {
-        this.seasonService = seasonService;
-    }
 
     @GetMapping("/current")
     public ResponseEntity<?> getCurrentSeason() {

@@ -1,5 +1,10 @@
 package com.achat.user;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -11,8 +16,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class User extends JpaEntity {
-    protected User() {}
 
     @Id
     @Column(length = 36)
@@ -20,8 +26,10 @@ public class User extends JpaEntity {
     @Column(nullable = false, unique = true, length = 254)
     private String email;
     @Column(nullable = false, length = 100)
+    @Setter
     private String username;
     @Column(nullable = false, unique = true, length = 100)
+    @Getter(AccessLevel.NONE)
     private String usernameKey;
     private String passwordHash;
     private boolean emailVerified;
@@ -46,6 +54,7 @@ public class User extends JpaEntity {
     @OrderColumn(name = "game_index")
     @Column(name = "finish_rank")
     private List<Integer> placementRanks;
+    @Setter
     private boolean isAdmin = false;
     public static final int PLACEMENT_GAMES_REQUIRED = 5;
 
@@ -88,25 +97,7 @@ public class User extends JpaEntity {
         usernameKey = username.toLowerCase(java.util.Locale.ROOT);
     }
 
-    // === Getters ===
-    public String getId() { return id; }
-    public String getEmail() { return email; }
-    public String getUsername() { return username; }  // 추가!
-    public String getPasswordHash() { return passwordHash; }
-    public boolean isEmailVerified() { return emailVerified; }
-    public Instant getCreatedAt() { return createdAt; }
-
     public void verifyEmail() { this.emailVerified = true; }
-
-    // username 변경 (추가!)
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    // === 나머지는 그대로 ===
-    public int getCoins() { return coins; }
-    public int getExp() { return exp; }
-    public int getLevel() { return level; }
 
     public void addReward(int coins, int exp) {
         this.coins += coins;
@@ -138,19 +129,14 @@ public class User extends JpaEntity {
     }
 
     // === 랭크 ===
-    public int getRp() { return rp; }
-    public int getRankedGames() { return rankedGames; }
     public Tier getTier() {
         if (!placementCompleted) {
             return Tier.UNRANKED;
         }
         return Tier.fromRp(rp);
     }
-    public Tier getSeasonHighestTier() { return seasonHighestTier; }
-    public int getSeasonId() { return seasonId; }
 
     // === 배치고사 ===
-    public boolean isPlacementCompleted() { return placementCompleted; }
     public List<Integer> getPlacementRanks() { return new ArrayList<>(placementRanks); }
     public int getPlacementGamesPlayed() { return placementRanks.size(); }
     public int getPlacementGamesRemaining() {
@@ -240,7 +226,4 @@ public class User extends JpaEntity {
     public boolean isRanked() {
         return placementCompleted;
     }
-
-    public boolean isAdmin() { return isAdmin; }
-    public void setAdmin(boolean admin) { this.isAdmin = admin; }
 }

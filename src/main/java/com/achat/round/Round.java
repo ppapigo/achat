@@ -1,11 +1,16 @@
 package com.achat.round;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+
 import java.time.Instant;
 import java.util.*;
 
+@Getter
 public class Round {
     private final String roomId;
     private final int durationMinutes;
+    @Getter(AccessLevel.NONE)
     private final int pickDurationSeconds = 20;
 
     private RoundPhase phase;
@@ -24,14 +29,6 @@ public class Round {
         this.phase = RoundPhase.WAITING;
         this.currentPhaseNumber = 0;
     }
-
-    // === 기존 메서드 유지 ===
-    public String getRoomId() { return roomId; }
-    public int getDurationMinutes() { return durationMinutes; }
-    public RoundPhase getPhase() { return phase; }
-    public int getCurrentPhaseNumber() { return currentPhaseNumber; }
-    public Instant getPhaseEndsAt() { return phaseEndsAt; }
-    public Instant getRoundStartedAt() { return roundStartedAt; }
 
     public int getPlayDurationSeconds() {
         int totalSeconds = durationMinutes * 60;
@@ -126,8 +123,4 @@ public class Round {
             rank++;
         }
     }
-
-    public Map<String, RoundScore> getScores() { return scores; }
-    public Map<String, RoundReward> getRewards() { return rewards; }
-    public RoundScoreTracker getTracker() { return tracker; }
 }

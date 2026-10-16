@@ -1,5 +1,7 @@
 package com.achat.post;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.like.LikeStore;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class PostService {
 
     private static final Duration POST_COOLDOWN = Duration.ofMinutes(3);
@@ -22,11 +25,6 @@ public class PostService {
 
     private final PostStore postStore;
     private final LikeStore likeStore;
-
-    public PostService(PostStore postStore, LikeStore likeStore) {
-        this.postStore = postStore;
-        this.likeStore = likeStore;
-    }
 
     public PostResponse createPost(String authorId, CreatePostRequest request) {
         // 쿨타임 체크

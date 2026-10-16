@@ -1,5 +1,7 @@
 package com.achat.roomrank;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.roomrank.RoomRankService.RoomRankResponse;
 import org.springframework.http.ResponseEntity;
@@ -9,13 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms/rank")
+@RequiredArgsConstructor
 public class RoomRankController {
 
     private final RoomRankService roomRankService;
-
-    public RoomRankController(RoomRankService roomRankService) {
-        this.roomRankService = roomRankService;
-    }
 
     /**
      * 🏆 전체 TOP

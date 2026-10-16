@@ -30,6 +30,10 @@ npm run preview
 
 ## 백엔드 실행
 
+Lombok은 Spring Boot의 의존성 관리 버전을 사용하며, 메인·테스트 소스 모두 `compileOnly`와 `annotationProcessor` 설정으로 적용합니다. 설정 방식은 [Lombok Gradle 문서](https://projectlombok.org/setup/gradle)를 따릅니다.
+
+단순 의존성 주입 생성자는 `@RequiredArgsConstructor`, 접근자는 `@Getter`와 필요한 필드의 `@Setter`, 로거는 `@Slf4j`를 사용합니다. JPA 기본 생성자는 `@NoArgsConstructor(access = AccessLevel.PROTECTED)`로 유지하고, 초기화·검증·방어적 복사 로직과 설정값 주입 생성자는 직접 구현합니다.
+
 MySQL에서 데이터베이스를 먼저 생성합니다. 테이블은 애플리케이션이 JPA 매핑으로 생성합니다.
 
 ```sql
@@ -63,7 +67,7 @@ $env:DB_PASSWORD = '해당 계정의 비밀번호'
 .\gradlew.bat test
 ```
 
-기본 테스트는 별도 DB 설치 없이 H2의 MySQL 호환 모드를 사용합니다. 서비스 호출 간 저장 여부, 구매 롤백, 중복 방지, 댓글·좋아요 삭제, 프로필 변경, 시즌 유지 및 실제 애플리케이션 종료·재기동 후 데이터 유지 여부를 검증합니다.
+기본 테스트는 별도 DB 설치 없이 H2의 MySQL 호환 모드를 사용합니다. 서비스 호출 간 저장 여부, 구매 롤백, 중복 방지, 댓글·좋아요 삭제, 프로필 변경, 시즌 유지 및 실제 애플리케이션 종료·재기동 후 데이터 유지 여부를 검증합니다. 모델 테스트는 JSON 속성명, 컬렉션의 방어적 복사, 가구 좌표 범위 제한도 확인합니다.
 
 MySQL에서도 같은 통합 테스트를 실행할 수 있습니다. 테스트 스키마는 `create-drop`으로 생성·삭제되므로 전용 테스트 DB를 사용합니다.
 

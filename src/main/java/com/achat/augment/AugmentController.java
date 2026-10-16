@@ -1,5 +1,7 @@
 package com.achat.augment;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.augment.dto.AugmentOptionResponse;
 import com.achat.augment.dto.PickAugmentRequest;
 import com.achat.augment.dto.ApplyTestRequest;
@@ -12,13 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/rooms/{roomId}/augments")
+@RequiredArgsConstructor
 public class AugmentController {
 
     private final AugmentService augmentService;
-
-    public AugmentController(AugmentService augmentService) {
-        this.augmentService = augmentService;
-    }
 
     @GetMapping("/options")
     public ResponseEntity<ApiResponse<AugmentOptionResponse>> getOptions(

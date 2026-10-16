@@ -1,5 +1,7 @@
 package com.achat.sanction;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -9,13 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/me/sanctions")
+@RequiredArgsConstructor
 public class SanctionController {
 
     private final SanctionService sanctionService;
-
-    public SanctionController(SanctionService sanctionService) {
-        this.sanctionService = sanctionService;
-    }
 
     /**
      * 내 제재 이력 전체

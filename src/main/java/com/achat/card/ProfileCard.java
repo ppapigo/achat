@@ -1,5 +1,9 @@
 package com.achat.card;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -11,8 +15,9 @@ import java.time.LocalDateTime;
     @UniqueConstraint(columnNames = {"owner_id", "drawn_date"}),
     @UniqueConstraint(columnNames = {"owner_id", "target_id"})
 })
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class ProfileCard extends JpaEntity {
-    protected ProfileCard() {}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,10 +36,4 @@ public class ProfileCard extends JpaEntity {
         this.drawnDate = LocalDate.now();
         this.createdAt = LocalDateTime.now();
     }
-
-    public Long getId() { return id; }
-    public String getOwnerId() { return ownerId; }
-    public String getTargetId() { return targetId; }
-    public LocalDate getDrawnDate() { return drawnDate; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
 }

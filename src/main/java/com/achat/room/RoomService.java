@@ -1,5 +1,7 @@
 package com.achat.room;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.room.dto.CreateRoomRequest;
@@ -12,15 +14,11 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class RoomService {
 
     private final RoomStore roomStore;
     private final RoomRankService roomRankService;  // 추가!
-
-    public RoomService(RoomStore roomStore, RoomRankService roomRankService) {  // 수정!
-        this.roomStore = roomStore;
-        this.roomRankService = roomRankService;  // 추가!
-    }
 
     public RoomResponse createRoom(CreateRoomRequest request, String ownerId) {
         Room room = new Room(request.name(), ownerId, request.maxMembers());

@@ -1,5 +1,9 @@
 package com.achat.history;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,8 +12,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "game_histories", indexes = @Index(columnList = "user_id,played_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class GameHistory extends JpaEntity {
-    protected GameHistory() {}
 
     @Id
     @Column(length = 36)
@@ -49,22 +54,6 @@ public class GameHistory extends JpaEntity {
         this.augmentUsed = augmentUsed;
         this.playedAt = Instant.now();
     }
-
-    // Getters
-    public String getId() { return id; }
-    public String getUserId() { return userId; }
-    public String getRoomId() { return roomId; }
-    public String getRoomName() { return roomName; }
-    public boolean isMatchRoom() { return isMatchRoom; }
-    public int getPlayerCount() { return playerCount; }
-    public int getRank() { return rank; }
-    public int getTotalPoints() { return totalPoints; }
-    public int getMessageCount() { return messageCount; }
-    public int getRpChange() { return rpChange; }
-    public int getCoinsEarned() { return coinsEarned; }
-    public int getExpEarned() { return expEarned; }
-    public String getAugmentUsed() { return augmentUsed; }
-    public Instant getPlayedAt() { return playedAt; }
 
     // 1등인지
     public boolean isWin() {

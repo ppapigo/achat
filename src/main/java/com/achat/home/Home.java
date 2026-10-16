@@ -1,5 +1,10 @@
 package com.achat.home;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -12,9 +17,9 @@ import java.util.Map;
  */
 @Entity
 @Table(name = "homes")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Home extends JpaEntity {
-    protected Home() {}
-
 
     @Id
     @Column(length = 36)
@@ -26,8 +31,11 @@ public class Home extends JpaEntity {
     private String representativeAugmentId; // 대표 증강
     private String backgroundTheme;         // 배경 테마
     private String titleBadge;              // 칭호
+    @Setter
     private String avatarStyle = "pixel-art";  // 아바타 스타일
+    @Setter
     private String avatarSeed;                  // 아바타 시드 (기본: userId)
+    @Setter
     private String avatarBgColor = "transparent"; // 배경색
     private long visitCount;                // 방문 수
 
@@ -39,8 +47,6 @@ public class Home extends JpaEntity {
 
     private Instant createdAt;
     private Instant updatedAt;
-
-
 
     public Home(String userId) {
         this.userId = userId;
@@ -54,42 +60,20 @@ public class Home extends JpaEntity {
 
     // === 가구 위치 내부 클래스 ===
     @Embeddable
+    @Getter
+    @NoArgsConstructor
     public static class FurniturePosition {
         private double x;  // 0-100 (퍼센트)
         private double y;  // 0-100 (퍼센트)
-
-        public FurniturePosition() {}
 
         public FurniturePosition(double x, double y) {
             this.x = Math.max(0, Math.min(100, x));
             this.y = Math.max(0, Math.min(100, y));
         }
 
-        public double getX() { return x; }
-        public double getY() { return y; }
-
         public void setX(double x) { this.x = Math.max(0, Math.min(100, x)); }
         public void setY(double y) { this.y = Math.max(0, Math.min(100, y)); }
     }
-
-    // === Getters ===
-    public String getUserId() { return userId; }
-    public String getStatusMessage() { return statusMessage; }
-    public String getRepresentativeJobId() { return representativeJobId; }
-    public String getRepresentativeAugmentId() { return representativeAugmentId; }
-    public String getBackgroundTheme() { return backgroundTheme; }
-    public String getTitleBadge() { return titleBadge; }
-    public long getVisitCount() { return visitCount; }
-    public Map<String, FurniturePosition> getFurnitureLayout() { return furnitureLayout; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public String getAvatarStyle() { return avatarStyle; }
-    public String getAvatarSeed() { return avatarSeed; }
-    public String getAvatarBgColor() { return avatarBgColor; }
-
-    public void setAvatarStyle(String avatarStyle) { this.avatarStyle = avatarStyle; }
-    public void setAvatarSeed(String avatarSeed) { this.avatarSeed = avatarSeed; }
-    public void setAvatarBgColor(String avatarBgColor) { this.avatarBgColor = avatarBgColor; }
 
     // === Update 메서드 ===
     public void updateStatusMessage(String message) {
@@ -161,5 +145,4 @@ public class Home extends JpaEntity {
         layout.put("tv", new FurniturePosition(10, 35));
         return layout;
     }
-
 }

@@ -1,5 +1,7 @@
 package com.achat.board;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.board.dto.*;
 import com.achat.common.ApiResponse;
 import jakarta.validation.Valid;
@@ -11,13 +13,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/boards")
+@RequiredArgsConstructor
 public class BoardController {
 
     private final BoardService boardService;
-
-    public BoardController(BoardService boardService) {
-        this.boardService = boardService;
-    }
 
     // 게시글 목록 (검색 포함)
     @GetMapping

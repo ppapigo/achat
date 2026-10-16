@@ -1,5 +1,7 @@
 package com.achat.post;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.post.dto.PostDto.CreatePostRequest;
 import com.achat.post.dto.PostDto.PostListResponse;
@@ -12,13 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
-
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
 
     /**
      * 포스트 작성

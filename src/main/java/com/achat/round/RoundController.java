@@ -1,5 +1,7 @@
 package com.achat.round;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.round.dto.RoundResponse;
 import com.achat.round.dto.StartRoundRequest;
@@ -10,13 +12,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/rooms/{roomId}/round")
+@RequiredArgsConstructor
 public class RoundController {
 
     private final RoundService roundService;
-
-    public RoundController(RoundService roundService) {
-        this.roundService = roundService;
-    }
 
     @PostMapping("/start")
     public ResponseEntity<ApiResponse<RoundResponse>> startRound(

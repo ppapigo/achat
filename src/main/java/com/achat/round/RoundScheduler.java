@@ -1,8 +1,8 @@
 package com.achat.round;
 
+import lombok.extern.slf4j.Slf4j;
+
 import jakarta.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -11,9 +11,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 @Component
+@Slf4j
 public class RoundScheduler {
-
-    private static final Logger log = LoggerFactory.getLogger(RoundScheduler.class);
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
     private final Map<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();

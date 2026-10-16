@@ -1,5 +1,10 @@
 package com.achat.report;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,8 +13,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "reports", indexes = @Index(columnList = "target_type,target_id"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Report extends JpaEntity {
-    protected Report() {}
 
     @Id
     @Column(length = 36)
@@ -25,12 +31,15 @@ public class Report extends JpaEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
     @Enumerated(EnumType.STRING)
+    @Setter
     private ReportStatus status;
     @Column(length = 36)
     private String roomId;  // 신고가 발생한 방 (nullable)
     private Instant createdAt;
+    @Setter
     private Instant resolvedAt;
     @Column(columnDefinition = "TEXT")
+    @Setter
     private String adminNote;  // 관리자 메모
 
     public Report(String reporterId, ReportType targetType, String targetId,
@@ -45,24 +54,6 @@ public class Report extends JpaEntity {
         this.status = ReportStatus.PENDING;
         this.createdAt = Instant.now();
     }
-
-    // Getters
-    public String getId() { return id; }
-    public String getReporterId() { return reporterId; }
-    public ReportType getTargetType() { return targetType; }
-    public String getTargetId() { return targetId; }
-    public ReportReason getReason() { return reason; }
-    public String getDescription() { return description; }
-    public ReportStatus getStatus() { return status; }
-    public String getRoomId() { return roomId; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getResolvedAt() { return resolvedAt; }
-    public String getAdminNote() { return adminNote; }
-
-    // Setters
-    public void setStatus(ReportStatus status) { this.status = status; }
-    public void setResolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt; }
-    public void setAdminNote(String adminNote) { this.adminNote = adminNote; }
 
     public void resolve(ReportStatus status, String adminNote) {
         this.status = status;

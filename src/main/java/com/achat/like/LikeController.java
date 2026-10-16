@@ -1,5 +1,7 @@
 package com.achat.like;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.like.LikeService.LikeResult;
 import org.springframework.http.ResponseEntity;
@@ -7,13 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class LikeController {
 
     private final LikeService likeService;
-
-    public LikeController(LikeService likeService) {
-        this.likeService = likeService;
-    }
 
     /**
      * 좋아요 토글

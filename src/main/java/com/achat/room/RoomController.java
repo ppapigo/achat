@@ -1,5 +1,7 @@
 package com.achat.room;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.room.dto.CreateRoomRequest;
 import com.achat.room.dto.CreateSubRoomRequest;
@@ -12,13 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/rooms")
+@RequiredArgsConstructor
 public class RoomController {
 
     private final RoomService roomService;
-
-    public RoomController(RoomService roomService) {
-        this.roomService = roomService;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<RoomResponse>> createRoom(

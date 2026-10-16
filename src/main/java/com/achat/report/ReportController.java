@@ -1,5 +1,7 @@
 package com.achat.report;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -9,13 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reports")
+@RequiredArgsConstructor
 public class ReportController {
 
     private final ReportService reportService;
-
-    public ReportController(ReportService reportService) {
-        this.reportService = reportService;
-    }
 
     /**
      * 유저 신고

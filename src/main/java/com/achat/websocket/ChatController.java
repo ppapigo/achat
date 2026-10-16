@@ -1,5 +1,7 @@
 package com.achat.websocket;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.augment.AugmentService;
@@ -29,6 +31,7 @@ import java.util.Map;
 
 @Controller
 @Transactional
+@RequiredArgsConstructor
 public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -41,28 +44,6 @@ public class ChatController {
     private final UserStore userStore;
     private final QuestService questService;
     private final SanctionService sanctionService;  // ✅ 추가
-
-    public ChatController(SimpMessagingTemplate messagingTemplate,
-                          RoomStore roomStore,
-                          MessageStore messageStore,
-                          AugmentService augmentService,
-                          MessageCooldownStore cooldownStore,
-                          RoundService roundService,
-                          ShopService shopService,
-                          UserStore userStore,
-                          QuestService questService,
-                          SanctionService sanctionService) {  // ✅ 추가
-        this.messagingTemplate = messagingTemplate;
-        this.roomStore = roomStore;
-        this.messageStore = messageStore;
-        this.augmentService = augmentService;
-        this.cooldownStore = cooldownStore;
-        this.roundService = roundService;
-        this.shopService = shopService;
-        this.userStore = userStore;
-        this.questService = questService;
-        this.sanctionService = sanctionService;  // ✅ 추가
-    }
 
     @MessageMapping("/rooms/{roomId}/join")
     public void joinRoom(@DestinationVariable String roomId, Principal principal) {

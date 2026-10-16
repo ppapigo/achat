@@ -1,5 +1,7 @@
 package com.achat.sanction;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.user.UserStore;
@@ -9,15 +11,11 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class SanctionService {
 
     private final SanctionStore sanctionStore;
     private final UserStore userStore;
-
-    public SanctionService(SanctionStore sanctionStore, UserStore userStore) {
-        this.sanctionStore = sanctionStore;
-        this.userStore = userStore;
-    }
 
     /**
      * 제재 적용

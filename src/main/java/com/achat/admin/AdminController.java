@@ -1,5 +1,7 @@
 package com.achat.admin;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.report.Report;
 import com.achat.report.ReportService;
@@ -18,19 +20,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
+@RequiredArgsConstructor
 public class AdminController {
 
     private final ReportService reportService;
     private final SanctionService sanctionService;
     private final UserStore userStore;
-
-    public AdminController(ReportService reportService,
-                           SanctionService sanctionService,
-                           UserStore userStore) {
-        this.reportService = reportService;
-        this.sanctionService = sanctionService;
-        this.userStore = userStore;
-    }
 
     /**
      * 관리자 권한 체크

@@ -1,5 +1,10 @@
 package com.achat.sanction;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum SanctionType {
     WARNING("경고", 0),           // 경고만
     MUTE("채팅 금지", 60),        // 채팅 금지 (기본 1시간)
@@ -8,17 +13,4 @@ public enum SanctionType {
 
     private final String description;
     private final int defaultMinutes; // -1이면 영구
-
-    SanctionType(String description, int defaultMinutes) {
-        this.description = description;
-        this.defaultMinutes = defaultMinutes;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public int getDefaultMinutes() {
-        return defaultMinutes;
-    }
 }

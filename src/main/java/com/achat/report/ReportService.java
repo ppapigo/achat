@@ -1,5 +1,7 @@
 package com.achat.report;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.board.BoardService;
@@ -11,6 +13,7 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ReportService {
 
     private final ReportStore reportStore;
@@ -30,11 +33,6 @@ public class ReportService {
     private static final int COMMENT_ACTION_THRESHOLD = 5;
 
     // ✅ 생성자 수정
-    public ReportService(ReportStore reportStore, SanctionService sanctionService, BoardService boardService) {
-        this.reportStore = reportStore;
-        this.sanctionService = sanctionService;
-        this.boardService = boardService;
-    }
 
     /**
      * 유저 신고

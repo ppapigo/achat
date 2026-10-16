@@ -1,5 +1,9 @@
 package com.achat.board;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -7,8 +11,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "board_comments", indexes = @Index(columnList = "board_id,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class BoardComment extends JpaEntity {
-    protected BoardComment() {}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,16 +66,6 @@ public class BoardComment extends JpaEntity {
         this.hidden = false;
         this.hiddenReason = null;
     }
-
-    public Long getId() { return id; }
-    public Long getBoardId() { return boardId; }
-    public Long getParentId() { return parentId; }
-    public String getAuthorId() { return authorId; }
-    public String getAuthorNickname() { return authorNickname; }
-    public String getContent() { return content; }
-    public boolean isHidden() { return hidden; }  // ✅ 추가
-    public String getHiddenReason() { return hiddenReason; }  // ✅ 추가
-    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public boolean isReply() { return parentId != null; }
 }

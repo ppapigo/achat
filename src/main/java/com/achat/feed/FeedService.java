@@ -1,5 +1,7 @@
 package com.achat.feed;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.friend.FriendStore;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class FeedService {
 
     private static final int INTERACTION_DAYS = 7;
@@ -29,22 +32,6 @@ public class FeedService {
     private final FriendStore friendStore;
     private final UserStore userStore;
     private final FeedCommentStore feedCommentStore;  // 추가!
-
-    public FeedService(
-            PostStore postStore,
-            LikeStore likeStore,
-            InteractionStore interactionStore,
-            FriendStore friendStore,
-            UserStore userStore,
-            FeedCommentStore feedCommentStore  // 추가!
-    ) {
-        this.postStore = postStore;
-        this.likeStore = likeStore;
-        this.interactionStore = interactionStore;
-        this.friendStore = friendStore;
-        this.userStore = userStore;
-        this.feedCommentStore = feedCommentStore;  // 추가!
-    }
 
     public FeedResponse getFeed(String userId, int limit) {
         Set<String> feedUserIds = new HashSet<>();

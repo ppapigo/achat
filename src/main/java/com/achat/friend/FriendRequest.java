@@ -1,5 +1,9 @@
 package com.achat.friend;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,9 +12,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "friend_requests", indexes = @Index(columnList = "to_user_id,status,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class FriendRequest extends JpaEntity {
-    protected FriendRequest() {}
-
 
     public enum Status {
         PENDING, ACCEPTED, REJECTED
@@ -37,11 +41,4 @@ public class FriendRequest extends JpaEntity {
 
     public void accept() { this.status = Status.ACCEPTED; }
     public void reject() { this.status = Status.REJECTED; }
-
-    // Getters
-    public String getId() { return id; }
-    public String getFromUserId() { return fromUserId; }
-    public String getToUserId() { return toUserId; }
-    public Status getStatus() { return status; }
-    public Instant getCreatedAt() { return createdAt; }
 }

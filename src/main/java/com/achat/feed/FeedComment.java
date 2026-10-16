@@ -1,5 +1,10 @@
 package com.achat.feed;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,8 +13,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "feed_comments", indexes = @Index(columnList = "post_id,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class FeedComment extends JpaEntity {
-    protected FeedComment() {}
 
     @Id
     @Column(length = 36)
@@ -18,6 +24,7 @@ public class FeedComment extends JpaEntity {
     private String postId;
     @Column(length = 36)
     private String authorId;
+    @Setter
     private String authorUsername;
     @Column(columnDefinition = "TEXT")
     private String content;
@@ -30,12 +37,4 @@ public class FeedComment extends JpaEntity {
         this.content = content;
         this.createdAt = Instant.now();
     }
-
-    public String getId() { return id; }
-    public String getPostId() { return postId; }
-    public String getAuthorId() { return authorId; }
-    public String getAuthorUsername() { return authorUsername; }
-    public void setAuthorUsername(String username) { this.authorUsername = username; }
-    public String getContent() { return content; }
-    public Instant getCreatedAt() { return createdAt; }
 }

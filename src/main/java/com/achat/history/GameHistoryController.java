@@ -1,5 +1,7 @@
 package com.achat.history;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.history.dto.GameHistoryResponse;
 import com.achat.history.dto.UserStatsResponse;
@@ -11,13 +13,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/history")
+@RequiredArgsConstructor
 public class GameHistoryController {
 
     private final GameHistoryService historyService;
-
-    public GameHistoryController(GameHistoryService historyService) {
-        this.historyService = historyService;
-    }
 
     // 내 전적 조회
     @GetMapping("/recent")

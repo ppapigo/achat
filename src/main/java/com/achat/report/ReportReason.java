@@ -1,5 +1,10 @@
 package com.achat.report;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum ReportReason {
     // 유저 신고 사유
     HARASSMENT("괴롭힘/욕설"),
@@ -22,12 +27,4 @@ public enum ReportReason {
     OTHER("기타");
 
     private final String description;
-
-    ReportReason(String description) {
-        this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }

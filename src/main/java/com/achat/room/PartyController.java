@@ -1,5 +1,7 @@
 package com.achat.room;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.common.ApiResponse;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RestController
 @Transactional
 @RequestMapping("/api/party")
+@RequiredArgsConstructor
 public class PartyController {
 
     private final RoomStore roomStore;
@@ -24,13 +27,6 @@ public class PartyController {
     private final FriendStore friendStore;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public PartyController(RoomStore roomStore, UserStore userStore,
-                           FriendStore friendStore, SimpMessagingTemplate messagingTemplate) {
-        this.roomStore = roomStore;
-        this.userStore = userStore;
-        this.friendStore = friendStore;
-        this.messagingTemplate = messagingTemplate;
-    }
     /**
      * 기존 파티에 친구 초대
      */

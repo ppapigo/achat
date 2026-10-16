@@ -1,5 +1,7 @@
 package com.achat.auth;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.auth.dto.*;
@@ -17,6 +19,7 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserStore userStore;
@@ -25,16 +28,6 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final SanctionService sanctionService;  // ✅ 추가
     private final SecureRandom random = new SecureRandom();
-
-    public AuthService(UserStore userStore, VerificationCodeStore codeStore,
-                       PasswordEncoder passwordEncoder, JwtProvider jwtProvider,
-                       SanctionService sanctionService) {  // ✅ 추가
-        this.userStore = userStore;
-        this.codeStore = codeStore;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtProvider = jwtProvider;
-        this.sanctionService = sanctionService;  // ✅ 추가
-    }
 
     public AuthResponse register(RegisterRequest request) {
         if (userStore.existsByEmail(request.email())) {

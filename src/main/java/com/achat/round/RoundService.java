@@ -1,5 +1,7 @@
 package com.achat.round;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.augment.AugmentService;
@@ -20,6 +22,7 @@ import java.util.Map;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class RoundService {
 
     private final RoundStore roundStore;
@@ -31,22 +34,6 @@ public class RoundService {
     private final RankService rankService;
     private final AugmentService augmentService;
     private final GameHistoryService gameHistoryService;
-
-    public RoundService(RoundStore roundStore, RoomStore roomStore,
-                        AugmentStore augmentStore, SimpMessagingTemplate messagingTemplate,
-                        RoundScheduler roundScheduler, UserStore userStore,
-                        RankService rankService, AugmentService augmentService,
-                        GameHistoryService gameHistoryService) {
-        this.roundStore = roundStore;
-        this.roomStore = roomStore;
-        this.augmentStore = augmentStore;
-        this.messagingTemplate = messagingTemplate;
-        this.roundScheduler = roundScheduler;
-        this.userStore = userStore;
-        this.rankService = rankService;
-        this.augmentService = augmentService;
-        this.gameHistoryService = gameHistoryService;
-    }
 
     public RoundResponse startRound(String roomId, String odLRXnwB, StartRoundRequest request) {
         Room room = roomStore.findById(roomId)
@@ -254,5 +241,4 @@ public class RoundService {
 
         System.out.println("게임 기록 저장 완료: " + room.getName() + " (" + playerCount + "명)");
     }
-
 }

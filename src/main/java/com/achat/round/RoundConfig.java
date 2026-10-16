@@ -1,19 +1,17 @@
 package com.achat.round;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
 
 @Configuration
+@RequiredArgsConstructor
 public class RoundConfig {
 
     private final RoundService roundService;
     private final RoundScheduler roundScheduler;
-
-    public RoundConfig(RoundService roundService, RoundScheduler roundScheduler) {
-        this.roundService = roundService;
-        this.roundScheduler = roundScheduler;
-    }
 
     @PostConstruct
     public void init() {

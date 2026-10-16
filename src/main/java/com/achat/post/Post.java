@@ -1,5 +1,9 @@
 package com.achat.post;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -10,9 +14,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "posts", indexes = @Index(columnList = "author_id,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Post extends JpaEntity {
-    protected Post() {}
-
 
     @Id
     @Column(length = 36)
@@ -43,15 +47,7 @@ public class Post extends JpaEntity {
         this.updatedAt = Instant.now();
     }
 
-    // === Getters ===
-    public String getId() { return id; }
-    public String getAuthorId() { return authorId; }
-    public PostType getType() { return type; }
-    public String getContent() { return content; }
     public List<String> getTags() { return new ArrayList<>(tags); }
-    public long getLikeCount() { return likeCount; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 
     // === Update 메서드 ===
     public void setContent(String content) {

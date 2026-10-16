@@ -1,5 +1,10 @@
 package com.achat.rank;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum Tier {
     UNRANKED(-1, -1, "언랭", "❓"),      // 추가!
     BRONZE(0, 399, "브론즈", "🥉"),
@@ -13,18 +18,6 @@ public enum Tier {
     private final int maxRp;
     private final String displayName;
     private final String emoji;
-
-    Tier(int minRp, int maxRp, String displayName, String emoji) {
-        this.minRp = minRp;
-        this.maxRp = maxRp;
-        this.displayName = displayName;
-        this.emoji = emoji;
-    }
-
-    public int getMinRp() { return minRp; }
-    public int getMaxRp() { return maxRp; }
-    public String getDisplayName() { return displayName; }
-    public String getEmoji() { return emoji; }
 
     // RP로 티어 계산 (rankedGames 체크 필요)
     public static Tier fromRp(int rp, int rankedGames) {

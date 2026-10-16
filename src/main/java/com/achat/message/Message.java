@@ -1,5 +1,10 @@
 package com.achat.message;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -10,8 +15,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "chat_messages", indexes = @Index(columnList = "room_id,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Message extends JpaEntity {
-    protected Message() {}
 
     @Id
     @Column(length = 36)
@@ -34,6 +40,7 @@ public class Message extends JpaEntity {
     private Set<String> likedByUserIds;
     @Column(length = 36)
     private String replyToId;
+    @Setter
     private String replyToPreview;
 
     public Message(String roomId, String senderId, String senderTitle, String content,
@@ -55,17 +62,6 @@ public class Message extends JpaEntity {
         this.replyToId = replyToId;
     }
 
-    // Getters
-    public String getId() { return id; }
-    public String getRoomId() { return roomId; }
-    public String getSenderId() { return senderId; }
-    public String getSenderTitle() { return senderTitle; }
-    public String getContent() { return content; }
-    public String getAppliedContent() { return appliedContent; }
-    public String getAppliedAugment() { return appliedAugment; }
-    public Instant getCreatedAt() { return createdAt; }
-
-    public Set<String> getLikedByUserIds() { return likedByUserIds; }
     public int getLikeCount() { return likedByUserIds.size(); }
 
     public boolean toggleLike(String userId) {
@@ -82,8 +78,5 @@ public class Message extends JpaEntity {
         return likedByUserIds.contains(userId);
     }
 
-    public String getReplyToId() { return replyToId; }
-    public String getReplyToPreview() { return replyToPreview; }
-    public void setReplyToPreview(String preview) { this.replyToPreview = preview; }
     public boolean isReply() { return replyToId != null; }
 }

@@ -1,10 +1,14 @@
 package com.achat.like;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import com.achat.persistence.JpaEntity;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "content_likes", uniqueConstraints = @UniqueConstraint(columnNames = {"target_type", "target_id", "user_id"}))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ContentLike extends JpaEntity {
     public enum TargetType { POST, BOARD, MINI_HOME }
 
@@ -18,8 +22,6 @@ public class ContentLike extends JpaEntity {
     private String targetId;
     @Column(nullable = false, length = 36)
     private String userId;
-
-    protected ContentLike() {}
 
     public ContentLike(TargetType targetType, String targetId, String userId) {
         this.targetType = targetType;

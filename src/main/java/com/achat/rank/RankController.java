@@ -1,5 +1,7 @@
 package com.achat.rank;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -9,13 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/rank")
+@RequiredArgsConstructor
 public class RankController {
 
     private final RankService rankService;
-
-    public RankController(RankService rankService) {
-        this.rankService = rankService;
-    }
 
     // 내 랭크 정보
     @GetMapping("/me")

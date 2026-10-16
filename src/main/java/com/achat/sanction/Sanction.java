@@ -1,5 +1,9 @@
 package com.achat.sanction;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,8 +12,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "sanctions", indexes = @Index(columnList = "user_id,issued_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Sanction extends JpaEntity {
-    protected Sanction() {}
 
     @Id
     @Column(length = 36)
@@ -60,15 +65,4 @@ public class Sanction extends JpaEntity {
         if (expiresAt == null) return true; // 영구
         return Instant.now().isBefore(expiresAt);
     }
-
-    // Getters
-    public String getId() { return id; }
-    public String getUserId() { return userId; }
-    public SanctionType getType() { return type; }
-    public String getReason() { return reason; }
-    public String getReportId() { return reportId; }
-    public String getIssuedBy() { return issuedBy; }
-    public Instant getIssuedAt() { return issuedAt; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public boolean isActive() { return isActive; }
 }

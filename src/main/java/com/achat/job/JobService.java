@@ -1,5 +1,7 @@
 package com.achat.job;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.job.dto.JobResponse;
@@ -12,15 +14,11 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class JobService {
 
     private final JobStore jobStore;
     private final JobPassiveRegistry passiveRegistry;
-
-    public JobService(JobStore jobStore, JobPassiveRegistry passiveRegistry) {
-        this.jobStore = jobStore;
-        this.passiveRegistry = passiveRegistry;
-    }
 
     public List<JobResponse> getAllJobs() {
         return passiveRegistry.getAllDefinitions().stream()

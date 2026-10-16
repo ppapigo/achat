@@ -1,5 +1,7 @@
 package com.achat.minihome;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,13 +11,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/minihome")
+@RequiredArgsConstructor
 public class MiniHomeController {
 
     private final MiniHomeService miniHomeService;
-
-    public MiniHomeController(MiniHomeService miniHomeService) {
-        this.miniHomeService = miniHomeService;
-    }
 
     // 내 글 작성
     @PostMapping("/posts")

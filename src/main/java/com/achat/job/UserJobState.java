@@ -1,12 +1,17 @@
 package com.achat.job;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
 @Entity
 @Table(name = "user_job_states")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class UserJobState extends JpaEntity {
-    protected UserJobState() {}
 
     @Id
     @Column(length = 36)
@@ -30,11 +35,6 @@ public class UserJobState extends JpaEntity {
         this.level = 1;
         this.exp = 0;
     }
-
-    public String getUserId() { return userId; }
-    public JobType getCurrentJob() { return currentJob; }
-    public int getLevel() { return level; }
-    public int getExp() { return exp; }
 
     public boolean isFreelancer() {
         return currentJob == JobType.FREELANCER;
@@ -111,10 +111,4 @@ public class UserJobState extends JpaEntity {
         INVITE,       // 초대
         KNOWLEDGE     // 답변, 정보 공유
     }
-
-    // Getters for action counts
-    public int getModerationActions() { return moderationActions; }
-    public int getRoomDesignActions() { return roomDesignActions; }
-    public int getInviteActions() { return inviteActions; }
-    public int getKnowledgeActions() { return knowledgeActions; }
 }

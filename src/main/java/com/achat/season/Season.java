@@ -1,5 +1,9 @@
 package com.achat.season;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -7,8 +11,9 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "seasons")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Season extends JpaEntity {
-    protected Season() {}
 
     @Id
     private int id;
@@ -24,12 +29,6 @@ public class Season extends JpaEntity {
         this.endDate = endDate;
         this.active = true;
     }
-
-    public int getId() { return id; }
-    public String getName() { return name; }
-    public Instant getStartDate() { return startDate; }
-    public Instant getEndDate() { return endDate; }
-    public boolean isActive() { return active; }
 
     public void end() {
         this.active = false;

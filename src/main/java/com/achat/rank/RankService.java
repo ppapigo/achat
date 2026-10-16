@@ -1,5 +1,7 @@
 package com.achat.rank;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.round.Round;
@@ -14,13 +16,10 @@ import java.util.Map;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class RankService {
 
     private final UserStore userStore;
-
-    public RankService(UserStore userStore) {
-        this.userStore = userStore;
-    }
 
     /**
      * 라운드 종료 시 RP 적용 (배치 로직 포함)

@@ -1,5 +1,7 @@
 package com.achat.home;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.home.dto.HomeDto.*;
 import com.achat.user.User;
@@ -13,15 +15,11 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class HomeController {
 
     private final HomeService homeService;
     private final UserStore userStore;
-
-    public HomeController(HomeService homeService, UserStore userStore) {
-        this.homeService = homeService;
-        this.userStore = userStore;
-    }
 
     // ✅ 닉네임 조회 헬퍼
     private String getNickname(String userId) {

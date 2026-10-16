@@ -1,10 +1,14 @@
 package com.achat.quest;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+@Getter
 public class Quest {
     private final String id;
     private final String roomId;
@@ -13,7 +17,9 @@ public class Quest {
     private final QuestType type;
     private final int targetCount;       // 목표 수 (예: 답장 3개)
     private final int rewardCoins;
+    @Getter(AccessLevel.NONE)
     private final Instant createdAt;
+    @Getter(AccessLevel.NONE)
     private final Instant expiresAt;
 
     private final Set<String> completedBy = new HashSet<>();  // 완료한 유저들
@@ -50,16 +56,4 @@ public class Quest {
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }
-
-    // Getters
-    public String getId() { return id; }
-    public String getRoomId() { return roomId; }
-    public String getMessageId() { return messageId; }
-    public String getCreatorId() { return creatorId; }
-    public QuestType getType() { return type; }
-    public int getTargetCount() { return targetCount; }
-    public int getRewardCoins() { return rewardCoins; }
-    public int getCurrentCount() { return currentCount; }
-    public boolean isCompleted() { return completed; }
-    public Set<String> getCompletedBy() { return completedBy; }
 }

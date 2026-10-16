@@ -1,5 +1,7 @@
 package com.achat.roomrank;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.room.Room;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class RoomRankService {
 
     private final RoomRankStore roomRankStore;
@@ -23,11 +26,6 @@ public class RoomRankService {
     private Instant currentSeasonStart = LocalDate.of(2024, 1, 1)
             .atStartOfDay()
             .toInstant(ZoneOffset.UTC);
-
-    public RoomRankService(RoomRankStore roomRankStore, RoomStore roomStore) {
-        this.roomRankStore = roomRankStore;
-        this.roomStore = roomStore;
-    }
 
     /**
      * 🏆 전체 TOP 영구방

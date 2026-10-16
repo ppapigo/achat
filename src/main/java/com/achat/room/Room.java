@@ -1,5 +1,10 @@
 package com.achat.room;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -10,14 +15,16 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "rooms", indexes = @Index(columnList = "owner_id"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class Room extends JpaEntity {
-    protected Room() {}
 
     @Id
     @Column(length = 36)
     private String id;
     private String name;
     @Column(length = 36)
+    @Setter
     private String ownerId;
     private int maxMembers;
     @ElementCollection(fetch = FetchType.EAGER)
@@ -26,16 +33,20 @@ public class Room extends JpaEntity {
     private Set<String> memberIds;
     private Instant createdAt;
     @Enumerated(EnumType.STRING)
+    @Setter
     private RoomType type = RoomType.PERMANENT;
 
     // 시즌 연결 (영구방용)
+    @Setter
     private int seasonId = 0;
 
     // 시즌별 통계 (시즌 종료 시 리셋)
     private int seasonMessageCount = 0;
+    @Setter
     private int seasonActiveMembers = 0;
 
     // 계층 구조
+    @Setter
     private String parentId = null;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "room_sub_rooms", joinColumns = @JoinColumn(name = "room_id"))
@@ -59,22 +70,8 @@ public class Room extends JpaEntity {
         this.type = type;
     }
 
-    // Getters
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getOwnerId() { return ownerId; }
-    public int getMaxMembers() { return maxMembers; }
-    public Set<String> getMemberIds() { return memberIds; }
-    public Instant getCreatedAt() { return createdAt; }
-    public RoomType getType() { return type; }
-
     // 시즌 관련
-    public int getSeasonId() { return seasonId; }
-    public void setSeasonId(int seasonId) { this.seasonId = seasonId; }
-    public int getSeasonMessageCount() { return seasonMessageCount; }
     public void addSeasonMessage() { this.seasonMessageCount++; }
-    public int getSeasonActiveMembers() { return seasonActiveMembers; }
-    public void setSeasonActiveMembers(int count) { this.seasonActiveMembers = count; }
 
     public void resetSeasonStats() {
         this.seasonMessageCount = 0;
@@ -82,16 +79,11 @@ public class Room extends JpaEntity {
     }
 
     // 타입 체크
-    public void setType(RoomType type) { this.type = type; }
     public boolean isMatchRoom() { return type == RoomType.MATCH; }
     public boolean isPartyRoom() { return type == RoomType.PARTY; }
     public boolean isPermanentRoom() { return type == RoomType.PERMANENT; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
 
     // 계층 구조
-    public String getParentId() { return parentId; }
-    public void setParentId(String parentId) { this.parentId = parentId; }
-    public Set<String> getSubRoomIds() { return subRoomIds; }
     public void addSubRoom(String subRoomId) { subRoomIds.add(subRoomId); }
     public void removeSubRoom(String subRoomId) { subRoomIds.remove(subRoomId); }
     public boolean isRootRoom() { return parentId == null; }

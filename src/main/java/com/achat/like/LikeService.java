@@ -1,5 +1,7 @@
 package com.achat.like;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.post.Post;
@@ -8,15 +10,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class LikeService {
 
     private final LikeStore likeStore;
     private final PostStore postStore;
-
-    public LikeService(LikeStore likeStore, PostStore postStore) {
-        this.likeStore = likeStore;
-        this.postStore = postStore;
-    }
 
     /**
      * 좋아요 토글

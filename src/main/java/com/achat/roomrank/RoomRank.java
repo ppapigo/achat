@@ -1,5 +1,9 @@
 package com.achat.roomrank;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -10,9 +14,9 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "room_ranks")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class RoomRank extends JpaEntity {
-    protected RoomRank() {}
-
 
     @Id
     @Column(length = 36)
@@ -39,20 +43,6 @@ public class RoomRank extends JpaEntity {
         this.lastActivityAt = Instant.now();
         this.updatedAt = Instant.now();
     }
-
-    // === Getters ===
-    public String getRoomId() { return roomId; }
-    public int getActivityScore() { return activityScore; }
-    public int getParticipationScore() { return participationScore; }
-    public int getRetentionScore() { return retentionScore; }
-    public int getPenaltyScore() { return penaltyScore; }
-    public int getValidMessageCount() { return validMessageCount; }
-    public int getUniqueUserCount() { return uniqueUserCount; }
-    public int getTotalMemberCount() { return totalMemberCount; }
-    public int getReturnUserCount() { return returnUserCount; }
-    public int getReportCount() { return reportCount; }
-    public Instant getLastActivityAt() { return lastActivityAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
 
     // === 점수 계산 ===
 

@@ -1,5 +1,10 @@
 package com.achat.board;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum BoardCategory {
     FREE("자유"),
     GUIDE("공략"),
@@ -8,12 +13,4 @@ public enum BoardCategory {
     NOTICE("공지");
 
     private final String displayName;
-
-    BoardCategory(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
 }

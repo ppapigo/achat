@@ -1,5 +1,9 @@
 package com.achat.shop;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,11 +12,12 @@ import java.util.Map;
 
 @Entity
 @Table(name = "user_equipment")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserEquipment extends JpaEntity {
-    protected UserEquipment() {}
 
     @Id
     @Column(length = 36)
+    @Getter
     private String userId;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "equipment_slots", joinColumns = @JoinColumn(name = "user_id"))
@@ -42,6 +47,4 @@ public class UserEquipment extends JpaEntity {
         copy.putAll(equipped);
         return copy;
     }
-
-    public String getUserId() { return userId; }
 }

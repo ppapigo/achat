@@ -1,5 +1,7 @@
 package com.achat.home;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.home.dto.HomeDto.*;
@@ -10,13 +12,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class HomeService {
 
     private final HomeStore homeStore;
-
-    public HomeService(HomeStore homeStore) {
-        this.homeStore = homeStore;
-    }
 
     /**
      * 내 홈 조회

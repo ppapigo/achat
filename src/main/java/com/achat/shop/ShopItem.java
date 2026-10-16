@@ -1,7 +1,10 @@
 package com.achat.shop;
 
+import lombok.Getter;
+
 import java.util.Map;
 
+@Getter
 public class ShopItem {
     private String id;
     private ItemType type;
@@ -27,18 +30,6 @@ public class ShopItem {
         this.equipSlot = equipSlot;
         this.available = true;
     }
-
-    // Getters
-    public String getId() { return id; }
-    public ItemType getType() { return type; }
-    public ItemCategory getCategory() { return category; }
-    public String getName() { return name; }
-    public int getPrice() { return price; }
-    public String getDescription() { return description; }
-    public Rarity getRarity() { return rarity; }
-    public boolean isAvailable() { return available; }
-    public EquipSlot getEquipSlot() { return equipSlot; }
-    public Map<String, Object> getPayload() { return payload; }
 
     public boolean isConsumable() { return type == ItemType.CONSUMABLE; }
     public boolean isEquippable() { return equipSlot != null; }

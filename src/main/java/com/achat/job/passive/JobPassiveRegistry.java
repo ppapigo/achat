@@ -1,9 +1,9 @@
 package com.achat.job.passive;
 
+import lombok.extern.slf4j.Slf4j;
+
 import com.achat.job.JobDefinition;
 import com.achat.job.JobType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,9 +12,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class JobPassiveRegistry {
-
-    private static final Logger log = LoggerFactory.getLogger(JobPassiveRegistry.class);
 
     private final Map<JobType, JobPassive> passives;
 

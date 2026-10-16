@@ -1,5 +1,7 @@
 package com.achat.match;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -9,13 +11,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/match")
+@RequiredArgsConstructor
 public class MatchController {
 
     private final MatchService matchService;
-
-    public MatchController(MatchService matchService) {
-        this.matchService = matchService;
-    }
 
     @PostMapping("/join")
     public ResponseEntity<ApiResponse<Map<String, Object>>> joinQueue(

@@ -1,5 +1,7 @@
 package com.achat.quest;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.user.UserStore;
@@ -11,19 +13,13 @@ import java.util.Random;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class QuestService {
 
     private final QuestStore questStore;
     private final UserStore userStore;
     private final SimpMessagingTemplate messagingTemplate;
     private final Random random = new Random();
-
-    public QuestService(QuestStore questStore, UserStore userStore,
-                        SimpMessagingTemplate messagingTemplate) {
-        this.questStore = questStore;
-        this.userStore = userStore;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     /**
      * 퀘스트 생성 (QuestGiverEffect에서 호출)

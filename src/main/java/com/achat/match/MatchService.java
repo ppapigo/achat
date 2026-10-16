@@ -1,5 +1,7 @@
 package com.achat.match;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.room.Room;
@@ -17,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class MatchService {
 
     private static final int MIN_PLAYERS = 6;
@@ -29,14 +32,6 @@ public class MatchService {
     private final SimpMessagingTemplate messagingTemplate;
 
     private final Map<String, String> userMatches = new ConcurrentHashMap<>();
-
-    public MatchService(MatchQueue matchQueue, RoomStore roomStore,
-                        RoundService roundService, SimpMessagingTemplate messagingTemplate) {
-        this.matchQueue = matchQueue;
-        this.roomStore = roomStore;
-        this.roundService = roundService;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     public Map<String, Object> joinQueue(String userId, int preferredCount) {
 

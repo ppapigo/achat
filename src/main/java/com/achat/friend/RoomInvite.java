@@ -1,5 +1,9 @@
 package com.achat.friend;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -8,9 +12,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "room_invites", indexes = @Index(columnList = "to_user_id,status,expires_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class RoomInvite extends JpaEntity {
-    protected RoomInvite() {}
-
 
     public enum Status {
         PENDING, ACCEPTED, REJECTED, EXPIRED
@@ -47,13 +51,4 @@ public class RoomInvite extends JpaEntity {
     public void accept() { this.status = Status.ACCEPTED; }
     public void reject() { this.status = Status.REJECTED; }
     public void expire() { this.status = Status.EXPIRED; }
-
-    // Getters
-    public String getId() { return id; }
-    public String getFromUserId() { return fromUserId; }
-    public String getToUserId() { return toUserId; }
-    public String getRoomId() { return roomId; }
-    public Status getStatus() { return status; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getExpiresAt() { return expiresAt; }
 }

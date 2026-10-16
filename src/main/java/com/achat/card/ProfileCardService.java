@@ -1,5 +1,7 @@
 package com.achat.card;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.card.dto.DrawResultResponse;
@@ -15,18 +17,12 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ProfileCardService {
-
-    private final ProfileCardRepository repository;
 
     private final UserStore userStore;
     private final FriendService friendService;
-
-    public ProfileCardService(UserStore userStore, FriendService friendService, ProfileCardRepository repository) {
-        this.repository = repository;
-        this.userStore = userStore;
-        this.friendService = friendService;
-    }
+    private final ProfileCardRepository repository;
 
     // 오늘 이미 뽑았는지 확인
     public boolean hasDrawnToday(String userId) {

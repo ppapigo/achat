@@ -1,5 +1,7 @@
 package com.achat.season;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.room.Room;
@@ -15,17 +17,12 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class SeasonService {
 
     private final SeasonStore seasonStore;
     private final UserStore userStore;
     private final RoomStore roomStore;
-
-    public SeasonService(SeasonStore seasonStore, UserStore userStore, RoomStore roomStore) {
-        this.seasonStore = seasonStore;
-        this.userStore = userStore;
-        this.roomStore = roomStore;
-    }
 
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void initializeFirstSeason() {

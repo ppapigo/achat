@@ -1,5 +1,7 @@
 package com.achat.job;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.job.dto.JobResponse;
 import com.achat.job.dto.SelectJobRequest;
@@ -13,13 +15,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/jobs")
+@RequiredArgsConstructor
 public class JobController {
 
     private final JobService jobService;
-
-    public JobController(JobService jobService) {
-        this.jobService = jobService;
-    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<JobResponse>>> getAllJobs() {

@@ -1,5 +1,7 @@
 package com.achat.friend;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.common.ApiResponse;
 import com.achat.user.UserStore;
 import org.springframework.http.ResponseEntity;
@@ -12,15 +14,11 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/friends")
+@RequiredArgsConstructor
 public class FriendController {
 
     private final FriendService friendService;
     private final UserStore userStore;
-
-    public FriendController(FriendService friendService, UserStore userStore) {
-        this.friendService = friendService;
-        this.userStore = userStore;
-    }
 
     // ===== 친구 요청 =====
 

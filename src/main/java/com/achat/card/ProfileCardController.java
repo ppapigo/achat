@@ -1,5 +1,7 @@
 package com.achat.card;
 
+import lombok.RequiredArgsConstructor;
+
 import com.achat.card.dto.DrawResultResponse;
 import com.achat.card.dto.ProfileCardResponse;
 import com.achat.common.ApiResponse;
@@ -11,13 +13,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cards")
+@RequiredArgsConstructor
 public class ProfileCardController {
 
     private final ProfileCardService profileCardService;
-
-    public ProfileCardController(ProfileCardService profileCardService) {
-        this.profileCardService = profileCardService;
-    }
 
     // 카드 드로우
     @PostMapping("/draw")

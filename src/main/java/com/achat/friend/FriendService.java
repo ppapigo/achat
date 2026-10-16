@@ -1,5 +1,7 @@
 package com.achat.friend;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.room.Room;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class FriendService {
 
     private final FriendStore friendStore;
@@ -25,14 +28,6 @@ public class FriendService {
     // 온라인 상태 추적
     private final Set<String> onlineUsers = ConcurrentHashMap.newKeySet();
     private final Map<String, String> userCurrentRoom = new ConcurrentHashMap<>();
-
-    public FriendService(FriendStore friendStore, UserStore userStore,
-                         RoomStore roomStore, SimpMessagingTemplate messagingTemplate) {
-        this.friendStore = friendStore;
-        this.userStore = userStore;
-        this.roomStore = roomStore;
-        this.messagingTemplate = messagingTemplate;
-    }
 
     // ===== 온라인 상태 =====
 

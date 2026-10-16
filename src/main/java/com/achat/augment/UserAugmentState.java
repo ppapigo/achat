@@ -1,8 +1,11 @@
 package com.achat.augment;
 
+import lombok.Getter;
+
 import java.time.Instant;
 import java.util.List;
 
+@Getter
 public class UserAugmentState {
     private final String userId;
     private final String roomId;
@@ -16,12 +19,6 @@ public class UserAugmentState {
         this.options = options;
         this.expiresAt = Instant.now().plusSeconds(300);
     }
-
-    public String getUserId() { return userId; }
-    public String getRoomId() { return roomId; }
-    public List<AugmentType> getOptions() { return options; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public AugmentType getSelectedAugment() { return selectedAugment; }
 
     public boolean hasSelected() {
         return selectedAugment != null;

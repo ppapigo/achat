@@ -1,5 +1,7 @@
 package com.achat.auth;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.auth.dto.*;
@@ -14,15 +16,11 @@ import java.util.Map;
 @RestController
 @Transactional
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final UserStore userStore;  // ✅ 추가
-
-    public AuthController(AuthService authService, UserStore userStore) {  // ✅ 수정
-        this.authService = authService;
-        this.userStore = userStore;  // ✅ 추가
-    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {

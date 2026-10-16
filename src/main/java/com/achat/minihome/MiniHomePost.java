@@ -1,5 +1,9 @@
 package com.achat.minihome;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -7,8 +11,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "mini_home_posts", indexes = @Index(columnList = "author_id,created_at"))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class MiniHomePost extends JpaEntity {
-    protected MiniHomePost() {}
 
     @Id
     @Column(length = 36)
@@ -27,13 +32,6 @@ public class MiniHomePost extends JpaEntity {
         this.likeCount = 0;
         this.createdAt = LocalDateTime.now();
     }
-
-    // Getters
-    public String getId() { return id; }
-    public String getAuthorId() { return authorId; }
-    public String getContent() { return content; }
-    public int getLikeCount() { return likeCount; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void addLike() { this.likeCount++; }
     public void removeLike() { this.likeCount--; }

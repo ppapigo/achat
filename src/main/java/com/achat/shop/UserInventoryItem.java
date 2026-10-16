@@ -1,5 +1,9 @@
 package com.achat.shop;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import com.achat.persistence.JpaEntity;
 
@@ -7,13 +11,16 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "user_inventory_items", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "item_id"}))
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class UserInventoryItem extends JpaEntity {
-    protected UserInventoryItem() {}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter(AccessLevel.NONE)
     private Long id;
     @Column(length = 36)
+    @Getter(AccessLevel.NONE)
     private String userId;
     @Column(length = 36)
     private String itemId;
@@ -36,8 +43,4 @@ public class UserInventoryItem extends JpaEntity {
         quantity--;
         return true;
     }
-
-    public String getItemId() { return itemId; }
-    public int getQuantity() { return quantity; }
-    public Instant getAcquiredAt() { return acquiredAt; }
 }
