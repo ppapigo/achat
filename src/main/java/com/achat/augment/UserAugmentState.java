@@ -12,6 +12,7 @@ public class UserAugmentState {
     private final List<AugmentType> options;
     private final Instant expiresAt;
     private AugmentType selectedAugment;
+    private String targetUserId;
 
     public UserAugmentState(String userId, String roomId, List<AugmentType> options) {
         this.userId = userId;
@@ -28,7 +29,7 @@ public class UserAugmentState {
         return Instant.now().isAfter(expiresAt);
     }
 
-    public void select(AugmentType type) {
+    public synchronized void select(AugmentType type, String targetUserId) {
         if (isExpired()) {
             throw new IllegalStateException("선택 시간이 만료되었습니다");
         }
@@ -38,6 +39,10 @@ public class UserAugmentState {
         if (!options.contains(type)) {
             throw new IllegalArgumentException("선택 가능한 증강이 아닙니다");
         }
+        if (targetUserId == null || targetUserId.isBlank() || userId.equals(targetUserId)) {
+            throw new IllegalArgumentException("증강을 적용할 상대를 선택해주세요");
+        }
+        this.targetUserId = targetUserId;
         this.selectedAugment = type;
     }
 }

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.achat.augment.AugmentService;
+import com.achat.augment.AugmentType;
 import com.achat.message.Message;
 import com.achat.message.MessageCooldownStore;
 import com.achat.message.MessageStore;
@@ -27,7 +28,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @Transactional
@@ -150,11 +153,11 @@ public class ChatController {
         String content = request.content();
         if (content == null || content.isBlank()) return;
 
-        // 증강 타입 먼저 확인
-        String augmentType = augmentService.getSelectedAugmentType(roomId, userId);
+        // 다른 참여자가 고른 증강을 발신자에게 적용
+        List<AugmentType> augmentTypes = augmentService.getAppliedAugmentTypes(roomId, userId);
 
         // 증강별 쿨타임 배율 계산
-        double cooldownMultiplier = getCooldownMultiplier(augmentType);
+        double cooldownMultiplier = getCooldownMultiplier(augmentTypes);
 
         // 쿨타임 체크 (배율 적용!)
         UserMessageTracker tracker = cooldownStore.getTracker(roomId, userId);
@@ -169,12 +172,14 @@ public class ChatController {
         tracker.recordMessage(content.length());
 
         // 증강 적용
-        String appliedContent = augmentService.applyAugment(roomId, userId, content);
+        String appliedContent = augmentService.applyAugments(roomId, userId, content, augmentTypes);
 
         // 발신자 칭호 조회
         String senderTitle = getSenderTitle(userId);
 
         // 메시지 생성
+        String augmentType = augmentTypes.isEmpty() ? null : augmentTypes.stream()
+                .map(Enum::name).collect(Collectors.joining(","));
         Message message = new Message(roomId, userId, senderTitle, content, appliedContent, augmentType, request.replyToId());
 
         // 답글 미리보기 설정
@@ -191,7 +196,7 @@ public class ChatController {
         messageStore.save(message);
 
         // 퀘스트 생성 (QUEST_GIVER 증강일 때)
-        if ("QUEST_GIVER".equals(augmentType)) {
+        if (augmentTypes.contains(AugmentType.QUEST_GIVER)) {
             questService.createQuest(roomId, message.getId(), userId);
         }
 
@@ -209,14 +214,11 @@ public class ChatController {
     /**
      * 증강별 쿨타임 배율 반환
      */
-    private double getCooldownMultiplier(String augmentType) {
-        if (augmentType == null) return 1.0;
-
-        return switch (augmentType) {
-            case "TURBO_CASTER" -> 0.6;
-            case "TIME_SHIFTER" -> 0.8;
-            default -> 1.0;
-        };
+    private double getCooldownMultiplier(List<AugmentType> augmentTypes) {
+        // 여러 속도 증강을 받으면 가장 큰 감소 효과를 적용
+        if (augmentTypes.contains(AugmentType.TURBO_CASTER)) return 0.6;
+        if (augmentTypes.contains(AugmentType.TIME_SHIFTER)) return 0.8;
+        return 1.0;
     }
 
     /**

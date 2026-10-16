@@ -7,5 +7,9 @@ import java.util.List;
 
 public record AugmentOptionResponse(
         List<AugmentDefinition> options,
-        AugmentType selected
-) {}
+        AugmentType selected,
+        String targetUserId,
+        List<Target> targets
+) {
+    public record Target(String userId, String username) {}
+}

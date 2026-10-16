@@ -9,7 +9,9 @@ import com.achat.augment.dto.PickAugmentRequest;
 import com.achat.augment.effect.AugmentEffectRegistry;
 import com.achat.job.JobStore;
 import com.achat.job.JobType;
+import com.achat.room.Room;
 import com.achat.room.RoomStore;
+import com.achat.user.UserStore;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,16 +28,14 @@ public class AugmentService {
     private final RoomStore roomStore;
     private final AugmentEffectRegistry effectRegistry;
     private final JobStore jobStore;
+    private final UserStore userStore;
     private final Random random = new Random();  // 추가
 
     public AugmentOptionResponse getOptions(String roomId, String userId) {
-        var stateOpt = augmentStore.find(userId, roomId);
-        if (stateOpt.isPresent() && stateOpt.get().getSelectedAugment() != null) {
-            UserAugmentState state = stateOpt.get();
-            return new AugmentOptionResponse(
-                    state.getOptions().stream().map(AugmentDefinition::of).toList(),
-                    state.getSelectedAugment()
-            );
+        Room room = requireMember(roomId, userId);
+        var stateOpt = augmentStore.find(userId, roomId).filter(state -> !state.isExpired());
+        if (stateOpt.isPresent()) {
+            return toResponse(stateOpt.get(), room);
         }
 
         boolean isFreelancer = jobStore.getOrCreate(userId).getCurrentJob() == JobType.FREELANCER;
@@ -62,32 +62,33 @@ public class AugmentService {
         UserAugmentState newState = new UserAugmentState(userId, roomId, options);
         augmentStore.save(newState);
 
-        return new AugmentOptionResponse(
-                options.stream().map(AugmentDefinition::of).toList(),
-                null
-        );
+        return toResponse(newState, room);
     }
 
     public AugmentOptionResponse pick(String roomId, String userId, PickAugmentRequest request) {
-        roomStore.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
+        Room room = requireMember(roomId, userId);
+        if (request.targetUserId() == null || request.targetUserId().equals(userId)
+                || !room.hasMember(request.targetUserId())) {
+            throw new IllegalArgumentException("같은 방에 있는 상대를 선택해주세요");
+        }
 
         UserAugmentState state = augmentStore.find(userId, roomId)
                 .orElseThrow(() -> new IllegalArgumentException("먼저 옵션을 조회해주세요"));
 
-        state.select(request.type());
+        state.select(request.type(), request.targetUserId());
 
-        return new AugmentOptionResponse(
-                state.getOptions().stream().map(AugmentDefinition::of).toList(),
-                state.getSelectedAugment()
-        );
+        return toResponse(state, room);
     }
 
     /**
      * 증강 미선택 유저 자동 선택 (PICKING 종료 시 호출)
      */
     public void autoSelectIfNotSelected(String roomId, String userId) {
-        var stateOpt = augmentStore.find(userId, roomId);
+        Room room = requireMember(roomId, userId);
+        List<String> targets = room.getMemberIds().stream().filter(id -> !id.equals(userId)).toList();
+        if (targets.isEmpty()) return;
+
+        var stateOpt = augmentStore.find(userId, roomId).filter(state -> !state.isExpired());
 
         if (stateOpt.isEmpty()) {
             // 옵션 조회도 안 했으면 먼저 생성
@@ -105,7 +106,7 @@ public class AugmentService {
         List<AugmentType> options = state.getOptions();
         if (!options.isEmpty()) {
             AugmentType randomPick = options.get(random.nextInt(options.size()));
-            state.select(randomPick);
+            state.select(randomPick, targets.get(random.nextInt(targets.size())));
             augmentStore.save(state);
             System.out.println("자동 증강 선택: " + userId + " -> " + randomPick);
         }
@@ -121,24 +122,58 @@ public class AugmentService {
     }
 
     public String applyAugment(String roomId, String userId, String message) {
-        var stateOpt = augmentStore.find(userId, roomId)
-                .filter(s -> !s.isExpired())
-                .filter(UserAugmentState::hasSelected);
-
-        if (stateOpt.isEmpty()) {
-            return message;
-        }
-
-        UserAugmentState state = stateOpt.get();
-        AugmentContext context = new AugmentContext(userId, roomId, message);
-        return effectRegistry.applyEffect(state.getSelectedAugment(), message, context);
+        return applyAugments(roomId, userId, message, getAppliedAugmentTypes(roomId, userId));
     }
 
-    public String getSelectedAugmentType(String roomId, String userId) {
-        return augmentStore.find(userId, roomId)
-                .filter(s -> !s.isExpired())
+    public String applyAugments(String roomId, String userId, String message, List<AugmentType> types) {
+        AugmentContext context = new AugmentContext(userId, roomId, message);
+        String result = message;
+        for (AugmentType type : types) {
+            result = effectRegistry.applyEffect(type, result, context);
+        }
+        return result;
+    }
+
+    /**
+     * 선택한 증강은 지정한 상대 한 명에게만 적용한다.
+     * 같은 종류는 한 번만 적용하고, 효과 순서는 항상 일정하게 유지한다.
+     */
+    public List<AugmentType> getAppliedAugmentTypes(String roomId, String userId) {
+        var room = roomStore.findById(roomId).orElse(null);
+        if (room == null || !room.hasMember(userId)) {
+            return List.of();
+        }
+
+        return room.getMemberIds().stream()
+                .filter(memberId -> !memberId.equals(userId))
+                .flatMap(memberId -> augmentStore.find(memberId, roomId).stream())
+                .filter(state -> !state.isExpired())
                 .filter(UserAugmentState::hasSelected)
-                .map(state -> state.getSelectedAugment().name())
-                .orElse(null);
+                .filter(state -> userId.equals(state.getTargetUserId()))
+                .map(UserAugmentState::getSelectedAugment)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private Room requireMember(String roomId, String userId) {
+        Room room = roomStore.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
+        if (!room.hasMember(userId)) {
+            throw new IllegalArgumentException("방에 참여한 후 증강을 선택해주세요");
+        }
+        return room;
+    }
+
+    private AugmentOptionResponse toResponse(UserAugmentState state, Room room) {
+        List<AugmentOptionResponse.Target> targets = room.getMemberIds().stream()
+                .filter(id -> !id.equals(state.getUserId()))
+                .sorted()
+                .map(id -> new AugmentOptionResponse.Target(id, userStore.findById(id)
+                        .map(user -> user.getUsername()).orElse(id)))
+                .toList();
+        return new AugmentOptionResponse(
+                state.getOptions().stream().map(AugmentDefinition::of).toList(),
+                state.getSelectedAugment(), state.getTargetUserId(), targets);
     }
 }

@@ -64,9 +64,17 @@ export async function previewFetch(input, { method = 'GET', body, signal } = {})
     if (action === 'leave') return result('방을 나갔어요.');
     if (action === 'messages') return result(viewState === 'empty' ? [] : roomMessages(roomId));
     if (action === 'round') return result(rounds[roomId] || { phase: 'WAITING', scores: [] });
-    if (action === 'round/start') { rounds[roomId] = { phase: 'PICKING', scores: [{ userId: user.id, rank: 1, totalPoints: 12 }, { userId: 'preview-friend', rank: 2, totalPoints: 8 }] }; changed(roomId); return result(rounds[roomId]); }
-    if (action === 'augments/options') return result({ options, selected: selections[roomId] || null });
-    if (action === 'augments/pick') { selections[roomId] = payload.type; return result({ options, selected: payload.type }); }
+    if (action === 'round/start') { delete selections[roomId]; rounds[roomId] = { phase: 'PICKING', scores: [{ userId: user.id, rank: 1, totalPoints: 12 }, { userId: 'preview-friend', rank: 2, totalPoints: 8 }] }; changed(roomId); return result(rounds[roomId]); }
+    if (action === 'augments/options' || action === 'augments/pick') {
+      const targets = Array.from({ length: Math.max(0, room.currentMembers - 1) }, (_, index) => ({ userId: index === 0 ? 'preview-friend' : `preview-member-${index}`, username: ['느긋한오후', '작은책방', '노을산책', '숲속의별'][index] || `참여자 ${index + 1}` }));
+      if (action === 'augments/pick') {
+        if (!targets.some((target) => target.userId === payload.targetUserId)) return result('같은 방에 있는 상대를 선택해주세요.', 400);
+        if (!options.some((option) => option.type === payload.type)) return result('선택 가능한 증강이 아닙니다.', 400);
+        if (selections[roomId]) return result('이미 증강을 선택했습니다.', 400);
+        selections[roomId] = { selected: payload.type, targetUserId: payload.targetUserId };
+      }
+      return result({ options, selected: null, targetUserId: null, ...selections[roomId], targets });
+    }
     if (action === 'preview-chat/chat') { roomMessages(roomId).push({ ...payload, id: `message-${nextId()}`, roomId, senderId: user.id, createdAt: timestamp(), likeCount: 0, likedByUserIds: [], replyToPreview: roomMessages(roomId).find((item) => item.id === payload.replyToId)?.content }); changed(roomId); return result(true); }
     if (action === 'preview-chat/like') { const message = roomMessages(roomId).find((item) => item.id === payload.messageId); if (message) { const liked = message.likedByUserIds.includes(user.id); message.likedByUserIds = liked ? message.likedByUserIds.filter((id) => id !== user.id) : [...message.likedByUserIds, user.id]; message.likeCount += liked ? -1 : 1; } changed(roomId); return result(true); }
   }

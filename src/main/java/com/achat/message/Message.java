@@ -31,7 +31,7 @@ public class Message extends JpaEntity {
     private String content;
     @Column(columnDefinition = "TEXT")
     private String appliedContent;
-    private String appliedAugment;
+    private String appliedAugment; // 적용된 증강 이름들 (여러 개면 쉼표로 구분)
     private Instant createdAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
