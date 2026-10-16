@@ -14,6 +14,7 @@ import MatchPage from './pages/MatchPage.jsx';
 import CardsPage from './pages/CardsPage.jsx';
 import ShopPage from './pages/ShopPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import SeasonsPage from './pages/SeasonsPage.jsx';
 
 function Protected() {
   const { user, status, error, reloadUser, logout } = useAuth(); const location = useLocation();
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="boards" element={<BoardPage />} /><Route path="boards/:boardId" element={<BoardDetailPage />} />
       <Route path="friends" element={<FriendsPage />} /><Route path="party" element={<PartyPage />} /><Route path="match" element={<MatchPage />} />
       <Route path="cards" element={<CardsPage />} /><Route path="shop" element={<ShopPage />} /><Route path="profile" element={<ProfilePage />} />
+      <Route path="seasons" element={<SeasonsPage />} />
       <Route path="*" element={<Empty title="페이지를 찾을 수 없어요" description="메뉴에서 다른 페이지를 선택해주세요." />} />
     </Route></Route>
   </Routes>;

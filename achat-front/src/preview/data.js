@@ -1,7 +1,23 @@
 // Synthetic data for the explicit ui-preview development mode. No network requests.
 const timestamp = (minutes = 0) => new Date(Date.now() - minutes * 60000).toISOString();
 const copy = (value) => JSON.parse(JSON.stringify(value));
-const user = { id: 'preview-me', email: 'preview@example.test', username: '초록빛하루', coins: 3600, exp: 160, expToNextLevel: 240, level: 4, rp: 720, tier: 'GOLD', placementCompleted: true, admin: false };
+const user = { id: 'preview-me', email: 'preview@example.test', username: '초록빛하루', coins: 3600, exp: 160, expToNextLevel: 240, level: 4, rp: 960, tier: 'GOLD', placementCompleted: true, admin: false };
+const currentSeason = { seasonId: 3, name: '시즌 3', startDate: timestamp(12 * 1440), endDate: timestamp(-18 * 1440), remainingDays: 18, active: true, progressPercent: 40 };
+const seasons = [
+  { seasonId: 1, name: '시즌 1', startDate: timestamp(72 * 1440), endDate: timestamp(42 * 1440), active: false, remainingDays: 0 },
+  { seasonId: 2, name: '시즌 2', startDate: timestamp(42 * 1440), endDate: timestamp(12 * 1440), active: false, remainingDays: 0 },
+  currentSeason,
+];
+const seasonHistory = [
+  { userId: user.id, seasonId: 1, finalRp: 630, finalTier: 'SILVER', highestTier: 'SILVER', rewardCoins: 350, recordedAt: seasons[0].endDate },
+  { userId: user.id, seasonId: 2, finalRp: 940, finalTier: 'GOLD', highestTier: 'PLATINUM', rewardCoins: 700, recordedAt: seasons[1].endDate },
+];
+const seasonRank = { odUserId: user.id, rp: user.rp, tier: user.tier, seasonHighestTier: 'PLATINUM', rpToNextTier: 240, seasonId: 3, rank: 3, placementCompleted: true, placementGamesPlayed: 5, placementGamesRemaining: 0 };
+const seasonLeaderboard = [
+  { rank: 1, odUserId: 'preview-leader', displayName: 'st***@example.test', rp: 2120, tier: 'CHALLENGER', level: 18 },
+  { rank: 2, odUserId: 'preview-friend', displayName: 'gr***@example.test', rp: 1450, tier: 'PLATINUM', level: 9 },
+  { rank: 3, odUserId: user.id, displayName: 'pr***@example.test', rp: user.rp, tier: user.tier, level: user.level },
+];
 let rooms = [
   { id: 'preview-room', name: '퇴근 후, 가벼운 수다', ownerId: user.id, maxMembers: 10, currentMembers: 4 },
   { id: 'room-books', name: '책 한 권, 이야기 한 잔', ownerId: 'preview-friend', maxMembers: 8, currentMembers: 3 },
@@ -55,6 +71,11 @@ export async function previewFetch(input, { method = 'GET', body, signal } = {})
   if (['/auth/login', '/auth/refresh'].includes(path)) return result({ accessToken: 'ui-preview-only', refreshToken: 'ui-preview-refresh', userId: user.id, email: user.email });
   if (['/auth/register', '/auth/verify', '/auth/resend-code'].includes(path)) return result({ userId: user.id, email: payload.email, verified: path === '/auth/verify' });
   if (path === '/auth/profile') { user.username = payload.username; return result({ username: user.username }); }
+  if (path === '/api/seasons/current') return viewState === 'empty' ? new Response(null, { status: 404 }) : result(currentSeason);
+  if (path === '/api/seasons') return result(viewState === 'empty' ? [] : seasons);
+  if (path === '/api/seasons/my-history') return result(viewState === 'empty' ? [] : seasonHistory);
+  if (path === '/rank/me') return result(viewState === 'empty' ? { ...seasonRank, rp: 0, tier: 'UNRANKED', seasonHighestTier: 'UNRANKED', rank: -1, placementCompleted: false, placementGamesPlayed: 2, placementGamesRemaining: 3 } : seasonRank);
+  if (path === '/rank/leaderboard') return result({ leaderboard: viewState === 'empty' ? [] : seasonLeaderboard, myRank: viewState === 'empty' ? -1 : seasonRank.rank });
   if (path === '/rooms' && method === 'POST') { const room = { ...payload, id: `room-${nextId()}`, ownerId: user.id, currentMembers: 1 }; rooms.push(room); return result(room); }
   if (path === '/rooms') return result(viewState === 'empty' ? [] : rooms);
   const roomMatch = path.match(/^\/rooms\/([^/]+)(?:\/(.+))?$/);

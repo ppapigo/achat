@@ -11,7 +11,7 @@ const browser = await chromium.launch({ headless: true, channel });
 const issues = [];
 const results = [];
 const sizes = [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'mobile', width: 390, height: 844 }];
-const routes = [['/', '홈'], ['/rooms', '채팅방'], ['/rooms/preview-room', '채팅'], ['/boards', '커뮤니티'], ['/boards/1', '게시글'], ['/friends', '친구'], ['/party', '파티'], ['/match', '매칭'], ['/cards', '카드'], ['/shop', '상점'], ['/profile', '프로필']];
+const routes = [['/', '홈'], ['/rooms', '채팅방'], ['/rooms/preview-room', '채팅'], ['/boards', '커뮤니티'], ['/boards/1', '게시글'], ['/friends', '친구'], ['/party', '파티'], ['/match', '매칭'], ['/seasons', '시즌'], ['/cards', '카드'], ['/shop', '상점'], ['/profile', '프로필']];
 try {
   for (const size of sizes) {
     const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1 });

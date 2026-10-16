@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
-import { Home, MessageSquare, Users, Layers, Shuffle, CreditCard, ShoppingBag, UserRound, LogOut, Menu, X, Coins, ArrowUpRight, BookOpen } from 'lucide-react';
+import { Home, MessageSquare, Users, Layers, Shuffle, CreditCard, ShoppingBag, UserRound, LogOut, Menu, X, Coins, ArrowUpRight, BookOpen, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { Avatar, Brand } from './UI.jsx';
 import { number } from '../lib/format.js';
@@ -8,7 +8,7 @@ import { UI_PREVIEW } from '../preview/mode.js';
 
 const navigation = [
   ['/', '홈', Home], ['/rooms', '채팅방', MessageSquare], ['/boards', '커뮤니티', BookOpen], ['/friends', '친구', Users],
-  ['/party', '내 파티', Layers], ['/match', '랜덤 매칭', Shuffle], ['/cards', '프로필 카드', CreditCard], ['/shop', '상점', ShoppingBag], ['/profile', '내 프로필', UserRound],
+  ['/party', '내 파티', Layers], ['/match', '랜덤 매칭', Shuffle], ['/seasons', '시즌', Trophy], ['/cards', '프로필 카드', CreditCard], ['/shop', '상점', ShoppingBag], ['/profile', '내 프로필', UserRound],
 ];
 export default function Shell() {
   const { user, logout } = useAuth(); const location = useLocation(); const [open, setOpen] = useState(false);

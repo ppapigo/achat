@@ -11,7 +11,8 @@
     "preview": "npm run preview --workspace achat-front",
     "lint": "npm run lint --workspace achat-front",
     "test": "npm run test --workspace achat-front",
-    "test:ui": "node scripts/check-ui.mjs"
+    "test:ui": "node scripts/check-ui.mjs",
+    "test:seasons": "node scripts/check-seasons-ui.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"
