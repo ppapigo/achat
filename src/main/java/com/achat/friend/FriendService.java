@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class FriendService {
+    private final com.achat.common.RoomExecution execution;
+    private final com.achat.security.AccountAccess access;
 
     private final FriendStore friendStore;
     private final UserStore userStore;
@@ -216,6 +218,8 @@ public class FriendService {
 
         Room room = roomStore.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
+        if (!room.hasMember(fromUserId) || room.isMatchRoom())
+            throw new org.springframework.security.access.AccessDeniedException("이 방에 초대할 권한이 없습니다");
 
         if (room.hasMember(toUserId)) {
             throw new IllegalArgumentException("이미 방에 있습니다");
@@ -273,11 +277,16 @@ public class FriendService {
 
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public String acceptInvite(String inviteId, String userId) {
+        RoomInvite existing = friendStore.findInviteById(inviteId).orElseThrow(() -> new IllegalArgumentException("초대를 찾을 수 없습니다"));
+        return execution.run(existing.getRoomId(), () -> acceptInviteLocked(inviteId, userId));
+    }
+    private String acceptInviteLocked(String inviteId, String userId) {
+        access.active(userId);
         RoomInvite invite = friendStore.findInviteById(inviteId)
                 .orElseThrow(() -> new IllegalArgumentException("초대를 찾을 수 없습니다"));
 
         if (!invite.getToUserId().equals(userId)) {
-            throw new IllegalArgumentException("권한이 없습니다");
+            throw new org.springframework.security.access.AccessDeniedException("권한이 없습니다");
         }
 
         if (invite.isExpired()) {
@@ -289,6 +298,11 @@ public class FriendService {
             throw new IllegalArgumentException("이미 처리된 초대입니다");
         }
 
+        Room room = roomStore.findById(invite.getRoomId()).orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
+        if (room.isMatchRoom() || !room.hasMember(invite.getFromUserId())
+                || !friendStore.areFriends(invite.getFromUserId(), userId))
+            throw new org.springframework.security.access.AccessDeniedException("유효한 방 초대가 아닙니다");
+        if (!room.hasMember(userId) && !room.addMember(userId)) throw new IllegalArgumentException("방이 가득 찼습니다");
         invite.accept();
         return invite.getRoomId();
     }

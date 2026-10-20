@@ -17,7 +17,7 @@ public class GameHistoryStore {
     public List<GameHistory> findByUserId(String userId) { return repository.findByUserIdOrderByPlayedAtAsc(userId); }
 
     public List<GameHistory> findRecentByUserId(String odUserId, int limit) {
-        return limit <= 0 ? List.of() : repository.findByUserIdOrderByPlayedAtDesc(odUserId, org.springframework.data.domain.PageRequest.of(0, limit));
+        return limit <= 0 ? List.of() : repository.findByUserIdOrderByPlayedAtDesc(odUserId, org.springframework.data.domain.PageRequest.of(0, Math.min(limit, 100)));
     }
 
     public UserStats calculateStats(String odUserId) {

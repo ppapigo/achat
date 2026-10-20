@@ -14,7 +14,10 @@ public record RoundResponse(
         int totalPhases,
         Instant phaseEndsAt,
         int durationMinutes,
-        List<ScoreSnapshot> scores
+        List<ScoreSnapshot> scores,
+        String roundId,
+        String gameId,
+        Instant serverTime
 ) {
     public record ScoreSnapshot(
             String userId,
@@ -45,11 +48,11 @@ public record RoundResponse(
                 3,
                 round.getPhaseEndsAt(),
                 round.getDurationMinutes(),
-                scoreList
+                scoreList, round.getRoundId(), round.getGameId(), Instant.now()
         );
     }
 
     public static RoundResponse waiting(String roomId) {
-        return new RoundResponse(roomId, RoundPhase.WAITING, 0, 3, null, 0, List.of());
+        return new RoundResponse(roomId, RoundPhase.WAITING, 0, 3, null, 0, List.of(), null, null, Instant.now());
     }
 }

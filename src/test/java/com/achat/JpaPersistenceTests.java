@@ -40,7 +40,6 @@ class JpaPersistenceTests {
     @Autowired UserStore users;
     @Autowired AuthService auth;
     @Autowired AuthController authController;
-    @Autowired VerificationCodeStore codes;
     @Autowired RoomStore rooms;
     @Autowired RoomService roomService;
     @Autowired MessageStore messages;
@@ -78,11 +77,9 @@ class JpaPersistenceTests {
     }
 
     @Test
-    void verificationAndProfileChangesSurviveSeparateTransactions() {
+    void registrationAndProfileChangesSurviveSeparateTransactions() {
         String email = UUID.randomUUID() + "@Example.com";
         String id = auth.register(new RegisterRequest(email, "password123!")).userId();
-        auth.verifyEmail(new VerifyCodeRequest(email, codes.getValidCode(email).orElseThrow()));
-        assertThat(users.findById(id).orElseThrow().isEmailVerified()).isTrue();
         assertThat(auth.login(new LoginRequest(email.toUpperCase(), "password123!")).userId()).isEqualTo(id);
         String oldName = users.findById(id).orElseThrow().getUsername();
         String newName = "nick-" + UUID.randomUUID();
@@ -215,10 +212,13 @@ class JpaPersistenceTests {
         assertThat(friends.findRequestById(request.getId()).orElseThrow().getStatus()).isEqualTo(FriendRequest.Status.ACCEPTED);
         assertThat(friends.getFriendIds(first)).contains(second);
         assertThat(friends.getFriendIds(second)).contains(first);
-        RoomInvite invite = new RoomInvite(first, second, "room");
+        Room invitedRoom = new Room("invite fixture", first, 8, RoomType.PARTY);
+        rooms.save(invitedRoom);
+        RoomInvite invite = new RoomInvite(first, second, invitedRoom.getId());
         friends.saveInvite(invite);
-        assertThat(friends.hasPendingInvite(second, "room")).isTrue();
-        assertThat(friendService.acceptInvite(invite.getId(), second)).isEqualTo("room");
+        assertThat(friends.hasPendingInvite(second, invitedRoom.getId())).isTrue();
+        assertThat(friendService.acceptInvite(invite.getId(), second)).isEqualTo(invitedRoom.getId());
+        assertThat(rooms.findById(invitedRoom.getId()).orElseThrow().hasMember(second)).isTrue();
         assertThat(friends.findPendingInvitesTo(second)).isEmpty();
         friends.removeFriend(first, second);
         assertThat(friends.areFriends(first, second)).isFalse();
@@ -279,7 +279,10 @@ class JpaPersistenceTests {
         String otherId = newUser().getId();
         var sanction = sanctions.applySanction(userId, SanctionType.MUTE, "test", null, "SYSTEM", 60);
         assertThat(sanctions.canChat(userId)).isFalse();
-        sanctions.revokeSanction(sanction.getId(), "SYSTEM");
+        User admin = newUser();
+        admin.setAdmin(true);
+        users.save(admin);
+        sanctions.revokeSanction(sanction.getId(), admin.getId());
         assertThat(sanctions.canChat(userId)).isTrue();
         Report report = new Report(otherId, ReportType.USER, userId, ReportReason.SPAM, "test report", null);
         reports.save(report);

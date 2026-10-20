@@ -21,11 +21,11 @@ class ModelContractTests {
     void booleanPropertiesKeepTheirExistingJsonNames() {
         User user = new User("contract@example.com", "password-hash");
         user.setAdmin(true);
-        user.verifyEmail();
 
         JsonNode userJson = mapper.valueToTree(user);
         assertThat(userJson.path("admin").asBoolean()).isTrue();
-        assertThat(userJson.path("emailVerified").asBoolean()).isTrue();
+        assertThat(userJson.has("emailVerified")).isFalse();
+        assertThat(userJson.has("legacyEmailVerified")).isFalse();
         assertThat(userJson.has("isAdmin")).isFalse();
         assertThat(userJson.has("usernameKey")).isFalse();
 

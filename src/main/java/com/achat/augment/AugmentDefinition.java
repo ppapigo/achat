@@ -28,6 +28,18 @@ public record AugmentDefinition(
             case QUEST_GIVER -> new AugmentDefinition(type, "퀘스트 기버", "채팅 미션을 생성합니다", "메타");
             case TIME_SHIFTER -> new AugmentDefinition(type, "타임 시프터", "관심 메시지가 상단에 표시됩니다", "메타");
             case INSIGHT_DROP -> new AugmentDefinition(type, "인사이트 드롭", "라운드 종료 시 하이라이트 제공", "메타");
+            case SEALED_MESSAGE -> new AugmentDefinition(type, "비밀 봉투", "클릭하거나 Enter로 봉투를 열어 메시지를 확인해요", "이펙트");
+            case TIME_CAPSULE -> new AugmentDefinition(type, "타임 캡슐", "서버 기준 10초 뒤 메시지가 공개돼요", "시간");
+            case TIME_BOMB -> new AugmentDefinition(type, "시한폭탄", "점수 인정 메시지에 15초 안에 상대가 답장하면 10점! 구간당 최대 50점", "미션");
+            case JACKPOT_MESSENGER -> new AugmentDefinition(type, "잭팟 메신저", "점수 인정 메시지에서 10% 확률로 10점. 최대 10회 추첨·3회 당첨", "보상");
+            case FORBIDDEN_WORD -> new AugmentDefinition(type, "금칙어 저주", "다음 5개 메시지의 금칙어 사용은 각 -3점, 모두 피하면 15점", "미션");
+            case GHOST_MESSAGE -> new AugmentDefinition(type, "유령 메시지", "반투명 말풍선에 마우스를 올리거나 터치하면 선명해져요", "이펙트");
+            case ZERO_GRAVITY -> new AugmentDefinition(type, "무중력 채팅", "말풍선이 부드럽게 떠올라요. 마우스를 올리면 멈춰요", "이펙트");
+            case DOPPELGANGER -> new AugmentDefinition(type, "도플갱어", "2초 뒤 시각적 잔상이 나타나요. 메시지와 보상은 한 번만", "이펙트");
+            case LIKE_OVERDRIVE -> new AugmentDefinition(type, "공감 폭주", "공감 1·3·5개마다 변화! 점수 인정 메시지의 5개 달성은 10점, 구간당 최대 3회", "보상");
+            case FATE_DICE -> new AugmentDefinition(type, "운명의 주사위", "1~4는 시각 효과, 5는 5점, 6은 10점! 점수 인정 메시지 최대 10회·50점", "보상");
+            case MAIN_CHARACTER -> new AugmentDefinition(type, "주인공 모드", "다음 메시지 하나를 6초 동안 금빛 카드로 강조해요", "이펙트");
+            case ICE_SEAL -> new AugmentDefinition(type, "얼음 봉인", "클릭하거나 Enter로 얼음을 깨고 메시지를 확인해요", "이펙트");
         };
     }
 }

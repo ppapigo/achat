@@ -57,19 +57,19 @@ public class HomeDto {
     // ========== 홈 업데이트 요청 ==========
 
     public record UpdateHomeRequest(
-            String statusMessage,
-            String backgroundTheme,
-            String titleBadge,
-            String avatarStyle,
-            String avatarSeed,
-            String avatarBgColor
+            @jakarta.validation.constraints.Size(max = 200) String statusMessage,
+            @jakarta.validation.constraints.Size(max = 100) String backgroundTheme,
+            @jakarta.validation.constraints.Size(max = 100) String titleBadge,
+            @jakarta.validation.constraints.Size(max = 50) String avatarStyle,
+            @jakarta.validation.constraints.Size(max = 100) String avatarSeed,
+            @jakarta.validation.constraints.Pattern(regexp = "transparent|#?[0-9a-fA-F]{6}") String avatarBgColor
     ) {}
 
     // ========== 가구 배치만 업데이트 ==========
 
     public record UpdateFurnitureRequest(
             @Valid
-            Map<String, FurniturePositionDto> layout
+            @jakarta.validation.constraints.Size(max = 50) Map<@jakarta.validation.constraints.Size(max = 64) String, FurniturePositionDto> layout
     ) {}
 
     // ========== 가구 배치 응답 ==========

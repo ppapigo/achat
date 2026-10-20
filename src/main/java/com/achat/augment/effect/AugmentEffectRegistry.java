@@ -14,6 +14,17 @@ import java.util.*;
 public class AugmentEffectRegistry {
 
     private final Map<AugmentType, AugmentEffect> effects = new EnumMap<>(AugmentType.class);
+    private final Map<AugmentType, MessageEffectHandler> handlers = new EnumMap<>(AugmentType.class);
+
+    public AugmentEffectRegistry(List<MessageEffectHandler> handlers) {
+        handlers.forEach(handler -> handler.types().forEach(type -> this.handlers.put(type, handler)));
+    }
+
+    public MessageEffect createMetadata(MessageEffectHandler.Input input) {
+        var type = input.progress().getType();
+        var handler = handlers.get(type);
+        return handler == null ? MessageEffect.visual(type) : handler.create(input);
+    }
 
     @PostConstruct
     public void init() {
@@ -36,6 +47,12 @@ public class AugmentEffectRegistry {
         register(AugmentType.TIME_SHIFTER, new TimeShifterEffect());
         register(AugmentType.INSIGHT_DROP, new InsightDropEffect());
 
+        // Only the actual text transforms change text. Every visual effect has structured metadata.
+        for (AugmentType type : AugmentType.values()) {
+            if (!effects.containsKey(type)) {
+                register(type, new PresentationEffect(type));
+            }
+        }
         log.info("증강 {}개 등록 완료: {}", effects.size(), effects.keySet());
     }
 

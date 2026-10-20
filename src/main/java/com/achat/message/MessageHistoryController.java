@@ -18,6 +18,30 @@ import java.util.List;
 public class MessageHistoryController {
     private final RoomStore rooms;
     private final MessageStore messages;
+    private final MessagePresenter presenter;
+    private final MessageRepository repository;
+
+    @GetMapping("/highlights")
+    public ResponseEntity<ApiResponse<List<MessageResponse>>> highlights(@PathVariable String roomId,
+            @AuthenticationPrincipal String userId) {
+        if (rooms.findById(roomId).filter(room -> room.hasMember(userId)).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("채팅방 멤버만 조회할 수 있습니다"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(repository
+                .findTop3ByRoomIdAndHighlightedAtIsNotNullOrderByHighlightedAtDescCreatedAtDesc(roomId)
+                .stream().map(presenter::present).toList()));
+    }
+
+    @GetMapping("/{messageId}")
+    public ResponseEntity<ApiResponse<MessageResponse>> message(
+            @PathVariable String roomId, @PathVariable String messageId, @AuthenticationPrincipal String userId) {
+        var room = rooms.findById(roomId);
+        if (room.isEmpty() || !room.get().hasMember(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("채팅방 멤버만 메시지를 조회할 수 있습니다"));
+        return messages.findById(messageId).filter(value -> roomId.equals(value.getRoomId()))
+                .map(value -> ResponseEntity.ok(ApiResponse.ok(presenter.present(value))))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("메시지를 찾을 수 없습니다")));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<MessageResponse>>> recentMessages(
@@ -30,6 +54,6 @@ public class MessageHistoryController {
         if (!room.get().hasMember(userId)) return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error("채팅방 멤버만 메시지를 조회할 수 있습니다"));
         return ResponseEntity.ok(ApiResponse.ok(messages.findRecentByRoomId(roomId, limit)
-                .stream().map(MessageResponse::from).toList()));
+                .stream().map(presenter::present).toList()));
     }
 }

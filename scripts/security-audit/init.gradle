@@ -1,0 +1,33 @@
+// Opt-in post-remediation regression checks, always isolated from MySQL.
+gradle.projectsEvaluated {
+    def project = gradle.rootProject
+    project.sourceSets {
+        authAudit {
+            java.srcDir 'scripts/security-audit/java'
+            resources.srcDir 'src/test/resources'
+            compileClasspath += project.sourceSets.main.output
+            runtimeClasspath += project.sourceSets.main.output
+        }
+    }
+    project.configurations.authAuditImplementation.extendsFrom(project.configurations.testImplementation)
+    project.configurations.authAuditRuntimeOnly.extendsFrom(project.configurations.testRuntimeOnly)
+    project.tasks.register('authSecurityAudit', Test) {
+        description = 'Checks repaired authentication behavior in an isolated H2 database.'
+        group = 'verification'
+        testClassesDirs = project.sourceSets.authAudit.output.classesDirs
+        classpath = project.sourceSets.authAudit.runtimeClasspath
+        useJUnitPlatform()
+        javaLauncher = project.javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+        // Override any machine/service database variables; never point audit traffic at MySQL.
+        systemProperty 'spring.datasource.url', 'jdbc:h2:mem:auth-audit-' + UUID.randomUUID() + ';MODE=MySQL;DB_CLOSE_DELAY=-1'
+        systemProperty 'spring.datasource.driver-class-name', 'org.h2.Driver'
+        systemProperty 'spring.datasource.username', 'sa'
+        systemProperty 'spring.datasource.password', ''
+        systemProperty 'spring.jpa.hibernate.ddl-auto', 'create-drop'
+        systemProperty 'java.io.tmpdir', project.layout.buildDirectory.dir('tmp/auth-security-audit').get().asFile.absolutePath
+        doFirst { project.layout.buildDirectory.dir('tmp/auth-security-audit').get().asFile.mkdirs() }
+        testLogging { events 'passed', 'failed', 'skipped' }
+    }
+}

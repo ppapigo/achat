@@ -1,20 +1,11 @@
 package com.achat.augment.effect;
 
-import com.achat.augment.AugmentContext;
-import com.achat.augment.AugmentType;
+import com.achat.augment.*;
 
+/** Text is preserved; structured metadata drives the JSX presentation and server rules. */
 public class TimeShifterEffect implements AugmentEffect {
-    @Override
     public AugmentType getType() { return AugmentType.TIME_SHIFTER; }
-
-    @Override
-    public String getName() { return "타임 시프터"; }
-
-    @Override
-    public String getDescription() { return "관심 메시지가 상단에 표시됩니다"; }
-
-    @Override
-    public String apply(String message, AugmentContext context) {
-        return "⏱️ " + message;
-    }
+    public String getName() { return AugmentDefinition.of(getType()).name(); }
+    public String getDescription() { return AugmentDefinition.of(getType()).description(); }
+    public String apply(String message, AugmentContext context) { return message; }
 }

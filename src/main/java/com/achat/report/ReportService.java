@@ -19,6 +19,10 @@ public class ReportService {
     private final ReportStore reportStore;
     private final SanctionService sanctionService;
     private final BoardService boardService;  // ✅ 추가
+    private final com.achat.common.RoomExecution execution;
+    private final com.achat.security.AccountAccess access;
+    private final com.achat.user.UserStore users;
+    private final com.achat.room.RoomStore rooms;
 
     // 자동 제재 임계값
     private static final int USER_WARNING_THRESHOLD = 3;
@@ -38,6 +42,14 @@ public class ReportService {
      * 유저 신고
      */
     public ReportResult reportUser(String reporterId, String targetUserId,
+                                   ReportReason reason, String description, String roomId) {
+        return execution.run("report:user:" + targetUserId, () -> {
+            validateReport(reporterId, targetUserId, reason, description);
+            if (users.findById(targetUserId).isEmpty()) throw new IllegalArgumentException("대상 사용자를 찾을 수 없습니다");
+            return reportUserLocked(reporterId, targetUserId, reason, description, roomId);
+        });
+    }
+    private ReportResult reportUserLocked(String reporterId, String targetUserId,
                                    ReportReason reason, String description, String roomId) {
         if (reporterId.equals(targetUserId)) {
             throw new IllegalArgumentException("자기 자신을 신고할 수 없습니다");
@@ -109,6 +121,13 @@ public class ReportService {
      */
     public ReportResult reportComment(String reporterId, String commentId,
                                       ReportReason reason, String description) {
+        return execution.run("report:comment:" + commentId, () -> {
+            validateReport(reporterId, commentId, reason, description);
+            return reportCommentLocked(reporterId, commentId, reason, description);
+        });
+    }
+    private ReportResult reportCommentLocked(String reporterId, String commentId,
+                                      ReportReason reason, String description) {
         if (reportStore.hasRecentReport(reporterId, commentId)) {
             throw new IllegalStateException("이미 최근에 신고한 댓글입니다");
         }
@@ -145,6 +164,15 @@ public class ReportService {
      */
     public ReportResult reportRoom(String reporterId, String targetRoomId,
                                    ReportReason reason, String description) {
+        return execution.run("report:room:" + targetRoomId, () -> {
+            validateReport(reporterId, targetRoomId, reason, description);
+            var room = rooms.findById(targetRoomId).orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
+            if (!room.isPermanentRoom() && !room.hasMember(reporterId)) throw new org.springframework.security.access.AccessDeniedException("방 접근 권한이 없습니다");
+            return reportRoomLocked(reporterId, targetRoomId, reason, description);
+        });
+    }
+    private ReportResult reportRoomLocked(String reporterId, String targetRoomId,
+                                   ReportReason reason, String description) {
         if (reportStore.hasRecentReport(reporterId, targetRoomId)) {
             throw new IllegalStateException("이미 최근에 신고한 방입니다");
         }
@@ -171,6 +199,13 @@ public class ReportService {
      * 게시글 신고 ✅ 수정: 자동 숨김
      */
     public ReportResult reportPost(String reporterId, String postId,
+                                   ReportReason reason, String description) {
+        return execution.run("report:post:" + postId, () -> {
+            validateReport(reporterId, postId, reason, description);
+            return reportPostLocked(reporterId, postId, reason, description);
+        });
+    }
+    private ReportResult reportPostLocked(String reporterId, String postId,
                                    ReportReason reason, String description) {
         if (reportStore.hasRecentReport(reporterId, postId)) {
             throw new IllegalStateException("이미 최근에 신고한 게시글입니다");
@@ -243,11 +278,17 @@ public class ReportService {
      * 신고 처리 (관리자용)
      */
     public Report resolveReport(String reportId, ReportStatus status, String adminNote) {
+        if (adminNote != null && adminNote.length() > 2000) throw new IllegalArgumentException("관리자 메모가 너무 깁니다");
         Report report = reportStore.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다"));
 
         report.resolve(status, adminNote);
         return report;
+    }
+    private void validateReport(String reporterId, String targetId, ReportReason reason, String description) {
+        access.active(reporterId);
+        if (targetId == null || targetId.isBlank() || targetId.length() > 64 || reason == null
+                || (description != null && description.length() > 2000)) throw new IllegalArgumentException("신고 입력값을 확인해 주세요");
     }
 
     /**

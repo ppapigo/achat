@@ -2,8 +2,6 @@ package com.achat.round;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.transaction.annotation.Transactional;
-
 import com.achat.augment.AugmentService;
 import com.achat.augment.AugmentStore;
 import com.achat.history.GameHistoryService;
@@ -17,14 +15,23 @@ import com.achat.user.UserStore;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.achat.common.RoomExecution;
+import com.achat.augment.AugmentAwardRepository;
+import com.achat.augment.effect.MessageEffectService;
+import com.achat.quest.QuestStore;
+import java.time.Instant;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class RoundService {
 
+    private final RoomExecution execution;
+    private final MessageEffectService effects;
+    private final AugmentAwardRepository awards;
+    private final QuestStore quests;
     private final RoundStore roundStore;
     private final RoomStore roomStore;
     private final AugmentStore augmentStore;
@@ -35,7 +42,47 @@ public class RoundService {
     private final AugmentService augmentService;
     private final GameHistoryService gameHistoryService;
 
-    public RoundResponse startRound(String roomId, String odLRXnwB, StartRoundRequest request) {
+    public RoundResponse startRound(String roomId, String userId, StartRoundRequest request) {
+        return execution.run(roomId, () -> startRoundLocked(roomId, userId, request));
+    }
+    public RoundResponse startRoundAuto(String roomId, int minutes) {
+        return execution.run(roomId, () -> startRoundAutoLocked(roomId, minutes));
+    }
+    public void advancePhase(String roomId) {
+        execution.run(roomId, () -> advancePhaseLocked(roomId));
+    }
+    public void advancePhase(String roomId, String roundId, RoundPhase phase, Instant deadline) {
+        execution.run(roomId, () -> {
+            var current = roundStore.findByRoomId(roomId).orElse(null);
+            if (current != null && Objects.equals(current.getRoundId(), roundId)
+                    && current.getPhase() == phase && Objects.equals(current.getPhaseEndsAt(), deadline)
+                    && !Instant.now().isBefore(deadline)) advancePhaseLocked(roomId);
+        });
+    }
+    public boolean onMessage(String roomId, String userId, String content) {
+        return execution.run(roomId, () -> onMessageLocked(roomId, userId, content));
+    }
+    public void onAugmentUsed(String roomId, String userId) {
+        execution.run(roomId, () -> onAugmentUsedLocked(roomId, userId));
+    }
+    public void onUserJoin(String roomId, String userId) {
+        execution.run(roomId, () -> onUserJoinLocked(roomId, userId));
+    }
+    public RoundResponse getRoundState(String roomId) {
+        return execution.run(roomId, () -> getRoundStateLocked(roomId));
+    }
+    private void updatePoints(Round round) {
+        checkpoint(round.getRoomId());
+        round.getScores().values().forEach(score -> score.setEffectPoints(0));
+        awards.totals(round.getGameId()).forEach(row -> {
+            var score = round.getScores().get((String) row[0]);
+            if (score != null) score.setEffectPoints(((Number) row[1]).intValue());
+        });
+        round.getScores().values().forEach(RoundScore::calculate);
+    }
+
+    private RoundResponse startRoundLocked(String roomId, String odLRXnwB, StartRoundRequest request) {
+        checkpoint(roomId);
         Room room = roomStore.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
 
@@ -66,7 +113,8 @@ public class RoundService {
         return RoundResponse.from(round);
     }
 
-    public RoundResponse startRoundAuto(String roomId, int durationMinutes) {
+    private RoundResponse startRoundAutoLocked(String roomId, int durationMinutes) {
+        checkpoint(roomId);
         Room room = roomStore.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다"));
 
@@ -89,7 +137,8 @@ public class RoundService {
         return RoundResponse.from(round);
     }
 
-    public void advancePhase(String roomId) {
+    private void advancePhaseLocked(String roomId) {
+        checkpoint(roomId);
         Round round = roundStore.findByRoomId(roomId).orElse(null);
         if (round == null) return;
 
@@ -108,6 +157,9 @@ public class RoundService {
                 roundScheduler.scheduleNextPhase(round);
             }
             case PLAYING -> {
+                effects.endCycle(roomId, round.getRoundId());
+                quests.cancelRoom(roomId);
+                updatePoints(round);
                 if (round.isLastPhase()) {
                     round.end();
                     roundStore.save(round);
@@ -126,6 +178,7 @@ public class RoundService {
                     broadcastRoundEnd(round, rpResults);
                     broadcastRoundState(round);
 
+                    augmentStore.clearRoom(roomId);
                     round.reset();
                     roundStore.save(round);
                     broadcastRoundState(round);
@@ -152,7 +205,8 @@ public class RoundService {
         });
     }
 
-    public boolean onMessage(String roomId, String odLRXnwB, String content) {
+    private boolean onMessageLocked(String roomId, String odLRXnwB, String content) {
+        checkpoint(roomId);
         Round round = roundStore.findByRoomId(roomId).orElse(null);
         if (round == null) {
             return false;
@@ -165,38 +219,47 @@ public class RoundService {
         return scored;
     }
 
-    public void onAugmentUsed(String roomId, String odLRXnwB) {
+    private void onAugmentUsedLocked(String roomId, String odLRXnwB) {
+        checkpoint(roomId);
         roundStore.findByRoomId(roomId).ifPresent(round -> {
             round.recordAugmentUsed(odLRXnwB);
             roundStore.save(round);
         });
     }
 
-    public void onUserJoin(String roomId, String odLRXnwB) {
+    private void onUserJoinLocked(String roomId, String odLRXnwB) {
+        checkpoint(roomId);
         roundStore.findByRoomId(roomId).ifPresent(round -> {
             round.addParticipant(odLRXnwB);
             roundStore.save(round);
         });
     }
 
-    public RoundResponse getRoundState(String roomId) {
+    private RoundResponse getRoundStateLocked(String roomId) {
         return roundStore.findByRoomId(roomId)
-                .map(RoundResponse::from)
+                .map(round -> { updatePoints(round); return RoundResponse.from(round); })
                 .orElse(RoundResponse.waiting(roomId));
     }
 
     private void clearAllAugmentStates(Room room, String roomId) {
-        room.getMemberIds().forEach(memberId -> augmentStore.remove(memberId, roomId));
+        augmentStore.clearRoom(roomId);
+    }
+
+    private void checkpoint(String roomId) {
+        roundStore.checkpoint(roomId);
     }
 
     private void broadcastRoundState(Round round) {
+        updatePoints(round);
         RoundResponse response = RoundResponse.from(round);
-        messagingTemplate.convertAndSend("/topic/rooms/" + round.getRoomId() + "/round", response);
+        RoomExecution.afterCommit(() -> messagingTemplate.convertAndSend("/topic/rooms/" + round.getRoomId() + "/round", response));
     }
 
     private void broadcastRoundEnd(Round round, Map<String, RankService.RpResult> rpResults) {
         RoundEndResponse response = RoundEndResponse.from(round, rpResults);
-        messagingTemplate.convertAndSend("/topic/rooms/" + round.getRoomId() + "/round/end", response);
+        RoundEndResponse complete = new RoundEndResponse(response.roomId(), response.results(),
+                effects.highlights(round.getRoomId(), round.getGameId()));
+        RoomExecution.afterCommit(() -> messagingTemplate.convertAndSend("/topic/rooms/" + round.getRoomId() + "/round/end", complete));
     }
 
     private void saveGameHistory(Round round, Room room, Map<String, RankService.RpResult> rpResults) {

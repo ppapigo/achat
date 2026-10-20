@@ -29,10 +29,10 @@ public class PostStore {
     }
     public Optional<Post> findById(String id) { return repository.findById(id); }
     public List<Post> findByAuthorId(String authorId, int limit) {
-        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(authorId, PageRequest.of(0, limit));
+        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(authorId, PageRequest.of(0, Math.min(limit, 100)));
     }
     public List<Post> findByAuthorIds(Set<String> authorIds, int limit) {
-        return limit <= 0 || authorIds.isEmpty() ? List.of() : repository.findByAuthorIdInOrderByCreatedAtDesc(authorIds, PageRequest.of(0, limit));
+        return limit <= 0 || authorIds.isEmpty() ? List.of() : repository.findByAuthorIdInOrderByCreatedAtDesc(authorIds, PageRequest.of(0, Math.min(limit, 101)));
     }
     public void delete(String postId) {
         commentRepository.deleteByPostId(postId);

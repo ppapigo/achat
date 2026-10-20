@@ -6,5 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record PickAugmentRequest(
         @NotNull AugmentType type,
-        @NotBlank String targetUserId
+        @NotBlank String targetUserId,
+        @NotBlank String roundId
 ) {}

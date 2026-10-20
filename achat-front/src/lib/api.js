@@ -54,7 +54,7 @@ export function createApiClient({ baseUrl = '/backend', storage, sessionKey = 'a
     let response;
     try { response = await fetchImpl(`${baseUrl.replace(/\/$/, '')}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal }); }
     catch (error) { if (error.name === 'AbortError') throw error; throw new ApiError('서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.'); }
-    if (auth && retry && session?.refreshToken && [401, 403].includes(response.status)) {
+    if (auth && retry && session?.refreshToken && response.status === 401) {
       // A later 401 may belong to the token another request has already refreshed.
       if (readSession()?.accessToken === session.accessToken) await refreshSession();
       if (!readSession()?.accessToken) throw new ApiError('다시 로그인해주세요.', 401);
@@ -70,7 +70,15 @@ export function createApiClient({ baseUrl = '/backend', storage, sessionKey = 'a
     if (expiresAt && expiresAt * 1000 < Date.now() + 30000) return (await refreshSession()).accessToken;
     return session.accessToken;
   }
-  return { request, readSession, setSession, refreshSession, ensureAccessToken, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
+  async function logout() {
+    // Finish an in-flight rotation before revoking the session.
+    if (refreshing) { try { await refreshing; } catch { /* Clear locally below. */ } }
+    const session = readSession();
+    try {
+      if (session?.refreshToken) await request('/auth/logout', { method: 'POST', body: { refreshToken: session.refreshToken }, auth: false });
+    } finally { setSession(null); }
+  }
+  return { request, readSession, setSession, refreshSession, ensureAccessToken, logout, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); } };
 }
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || '/backend';

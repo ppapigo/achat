@@ -14,6 +14,7 @@ import java.util.Map;
 public class SeasonController {
 
     private final SeasonService seasonService;
+    private final com.achat.security.AccountAccess access;
 
     @GetMapping("/current")
     public ResponseEntity<?> getCurrentSeason() {
@@ -43,7 +44,8 @@ public class SeasonController {
     }
 
     @PostMapping("/end")
-    public ResponseEntity<?> endSeason() {
+    public ResponseEntity<?> endSeason(@RequestAttribute("userId") String userId) {
+        access.admin(userId);
         try {
             SeasonService.SeasonEndResult result = seasonService.endCurrentSeason();
             return ResponseEntity.ok(Map.of(

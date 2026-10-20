@@ -24,6 +24,10 @@ public class RoundScheduler {
     }
 
     public void scheduleNextPhase(Round round) {
+        com.achat.common.RoomExecution.afterCommit(() -> scheduleCommittedPhase(round));
+    }
+
+    private void scheduleCommittedPhase(Round round) {
         if (round.getPhaseEndsAt() == null) return;
 
         cancelScheduledTask(round.getRoomId());
@@ -34,19 +38,28 @@ public class RoundScheduler {
         log.info("라운드 스케줄: roomId={}, phase={}, {}ms 후 진행",
                 round.getRoomId(), round.getPhase(), delayMs);
 
+        String roundId = round.getRoundId();
+        RoundPhase phase = round.getPhase();
+        Instant deadline = round.getPhaseEndsAt();
         ScheduledFuture<?> future = scheduler.schedule(
-                () -> {
-                    try {
-                        roundService.advancePhase(round.getRoomId());
-                    } catch (Exception e) {
-                        log.error("라운드 진행 오류: {}", e.getMessage(), e);
-                    }
-                },
+                () -> advanceSafely(round.getRoomId(), roundId, phase, deadline),
                 delayMs,
                 TimeUnit.MILLISECONDS
         );
 
         scheduledTasks.put(round.getRoomId(), future);
+    }
+
+    private void advanceSafely(String roomId, String roundId, RoundPhase phase, Instant deadline) {
+        try {
+            roundService.advancePhase(roomId, roundId, phase, deadline);
+        } catch (Exception e) {
+            log.error("라운드 진행 오류: {}. 1초 후 재시도합니다.", e.getMessage(), e);
+            if (!scheduler.isShutdown()) {
+                scheduledTasks.put(roomId, scheduler.schedule(
+                        () -> advanceSafely(roomId, roundId, phase, deadline), 1, TimeUnit.SECONDS));
+            }
+        }
     }
 
     public void cancelScheduledTask(String roomId) {

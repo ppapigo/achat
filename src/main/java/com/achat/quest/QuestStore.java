@@ -1,36 +1,36 @@
 package com.achat.quest;
 
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@RequiredArgsConstructor
+@Transactional
 public class QuestStore {
 
     // messageId → Quest
-    private final Map<String, Quest> questsByMessage = new ConcurrentHashMap<>();
+    private final QuestRepository repository;
 
     public void save(Quest quest) {
-        questsByMessage.put(quest.getMessageId(), quest);
+        repository.save(quest);
     }
 
     public Optional<Quest> findByMessageId(String messageId) {
-        Quest quest = questsByMessage.get(messageId);
-        if (quest != null && quest.isExpired()) {
-            questsByMessage.remove(messageId);
-            return Optional.empty();
-        }
-        return Optional.ofNullable(quest);
+        return repository.findByMessageId(messageId);
     }
 
     public void remove(String messageId) {
-        questsByMessage.remove(messageId);
+        repository.findByMessageId(messageId).ifPresent(Quest::cancel);
     }
 
     // 만료된 퀘스트 정리
     public void cleanExpired() {
-        questsByMessage.entrySet().removeIf(e -> e.getValue().isExpired());
+        // Expiration is checked on reads/progression; keep completed receipts for idempotency.
+    }
+    public void cancelRoom(String roomId) {
+        repository.findByRoomIdAndCompletedFalseAndCancelledFalse(roomId).forEach(Quest::cancel);
     }
 }

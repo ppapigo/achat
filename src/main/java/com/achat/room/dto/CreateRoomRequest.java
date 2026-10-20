@@ -5,6 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record CreateRoomRequest(
-        @NotBlank String name,
-        @Min(2) @Max(10) int maxMembers
+        @NotBlank @jakarta.validation.constraints.Size(max = 100) String name,
+        @Min(2) @Max(12) int maxMembers
 ) {}

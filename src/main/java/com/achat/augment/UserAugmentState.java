@@ -9,16 +9,18 @@ import java.util.List;
 public class UserAugmentState {
     private final String userId;
     private final String roomId;
+    private final String roundId;
     private final List<AugmentType> options;
     private final Instant expiresAt;
     private AugmentType selectedAugment;
     private String targetUserId;
 
-    public UserAugmentState(String userId, String roomId, List<AugmentType> options) {
+    public UserAugmentState(String userId, String roomId, String roundId, List<AugmentType> options, Instant expiresAt) {
         this.userId = userId;
         this.roomId = roomId;
-        this.options = options;
-        this.expiresAt = Instant.now().plusSeconds(300);
+        this.roundId = roundId;
+        this.options = List.copyOf(options);
+        this.expiresAt = expiresAt;
     }
 
     public boolean hasSelected() {
@@ -26,15 +28,13 @@ public class UserAugmentState {
     }
 
     public boolean isExpired() {
-        return Instant.now().isAfter(expiresAt);
+        return !Instant.now().isBefore(expiresAt);
     }
 
-    public synchronized void select(AugmentType type, String targetUserId) {
-        if (isExpired()) {
-            throw new IllegalStateException("선택 시간이 만료되었습니다");
-        }
+    // Only AugmentStore selects while holding the room lock, including deadline auto-selection.
+    void select(AugmentType type, String targetUserId) {
         if (hasSelected()) {
-            throw new IllegalStateException("이미 증강을 선택했습니다");
+            throw new AugmentConflictException("이미 증강을 선택했습니다");
         }
         if (!options.contains(type)) {
             throw new IllegalArgumentException("선택 가능한 증강이 아닙니다");
@@ -44,5 +44,10 @@ public class UserAugmentState {
         }
         this.targetUserId = targetUserId;
         this.selectedAugment = type;
+    }
+
+    void undoSelection() {
+        this.selectedAugment = null;
+        this.targetUserId = null;
     }
 }

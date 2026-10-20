@@ -30,10 +30,26 @@ public class MatchService {
     private final RoomStore roomStore;
     private final RoundService roundService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.achat.common.RoomExecution execution;
+    private final com.achat.security.AccountAccess access;
+    private final com.achat.round.RoundStore roundStore;
+    private final java.util.concurrent.ScheduledExecutorService starter =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread thread = new Thread(r, "match-round-start"); thread.setDaemon(true); return thread;
+            });
+    private static final String LOCK = "system:matchmaking";
 
     private final Map<String, String> userMatches = new ConcurrentHashMap<>();
 
     public Map<String, Object> joinQueue(String userId, int preferredCount) {
+        return execution.run(LOCK, () -> {
+            access.active(userId);
+            if (activeMatch(userId) != null) throw new com.achat.augment.AugmentConflictException("이미 진행 중인 매치에 참여하고 있습니다");
+            checkpoint();
+            return joinLocked(userId, preferredCount);
+        });
+    }
+    private Map<String, Object> joinLocked(String userId, int preferredCount) {
 
         if (preferredCount < 6) preferredCount = 6;
         if (preferredCount > 12) preferredCount = 12;
@@ -50,7 +66,7 @@ public class MatchService {
     }
 
     public void leaveQueue(String userId) {
-        matchQueue.leave(userId);
+        execution.run(LOCK, () -> { checkpoint(); matchQueue.leave(userId); });
     }
 
     public Map<String, Object> getQueueStatus(String userId) {
@@ -63,12 +79,14 @@ public class MatchService {
     }
 
     public String getMatchedRoom(String userId) {
-        return userMatches.get(userId);
+        return execution.run(LOCK, () -> activeMatch(userId));
     }
 
     @Scheduled(fixedRate = 3000)
-    @Scheduled(fixedRate = 3000)
     public void processMatchmaking() {
+        execution.run(LOCK, () -> { checkpoint(); processLocked(); });
+    }
+    private void processLocked() {
         int queueSize = matchQueue.getQueueSize();
         if (queueSize < MIN_PLAYERS) {
             return;
@@ -84,7 +102,10 @@ public class MatchService {
 
         // 매칭 가능하면 실행
         if (queueSize >= optimalCount) {
-            List<String> players = matchQueue.pollPlayers(optimalCount);
+            List<String> players = matchQueue.pollPlayers(optimalCount).stream().filter(id -> {
+                try { access.active(id); return activeMatch(id) == null; }
+                catch (com.achat.security.UnauthorizedException | org.springframework.security.access.AccessDeniedException e) { return false; }
+            }).toList();
             if (players.size() >= MIN_PLAYERS) {
                 createMatch(players);
             } else {
@@ -105,28 +126,44 @@ public class MatchService {
         players.forEach(userId -> userMatches.put(userId, room.getId()));
 
         // 매칭 완료 알림
-        players.forEach(userId -> {
+        com.achat.common.RoomExecution.afterCommit(() -> players.forEach(userId -> {
             messagingTemplate.convertAndSend("/topic/match/" + userId, Map.of(
                     "type", "MATCHED",
                     "roomId", room.getId(),
                     "players", players.size()
             ));
-        });
+        }));
 
         // 3초 후 라운드 자동 시작
-        new Thread(() -> {
+        com.achat.common.RoomExecution.afterCommit(() -> starter.schedule(() -> {
             try {
-                Thread.sleep(3000);
                 roundService.startRoundAuto(room.getId(), ROUND_DURATION_MINUTES);
                 messagingTemplate.convertAndSend("/topic/rooms/" + room.getId() + "/round",
                         roundService.getRoundState(room.getId()));
             } catch (Exception e) {
-                e.printStackTrace();
+                org.slf4j.LoggerFactory.getLogger(MatchService.class).warn("Match round start failed: {}", e.getClass().getSimpleName());
             }
-        }).start();
+        }, 3, java.util.concurrent.TimeUnit.SECONDS));
     }
 
     public void cleanupMatch(String roomId) {
-        userMatches.entrySet().removeIf(entry -> entry.getValue().equals(roomId));
+        execution.run(LOCK, () -> { checkpoint(); userMatches.entrySet().removeIf(entry -> entry.getValue().equals(roomId)); });
     }
+    private String activeMatch(String userId) {
+        String id = userMatches.get(userId);
+        if (id == null) return null;
+        boolean ended = roundStore.findByRoomId(id).map(round -> round.getPhase() == com.achat.round.RoundPhase.ENDED).orElse(false);
+        if (ended || roomStore.findById(id).filter(room -> room.hasMember(userId)).isEmpty()) {
+            userMatches.remove(userId); return null;
+        }
+        return id;
+    }
+    private void checkpoint() {
+        com.achat.common.RoomExecution.checkpoint(LOCK, () -> {
+            Runnable queue = matchQueue.checkpoint();
+            var matches = new java.util.HashMap<>(userMatches);
+            return () -> { queue.run(); userMatches.clear(); userMatches.putAll(matches); };
+        });
+    }
+    @jakarta.annotation.PreDestroy public void close() { starter.shutdownNow(); }
 }

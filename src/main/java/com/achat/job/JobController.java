@@ -19,6 +19,7 @@ import java.util.List;
 public class JobController {
 
     private final JobService jobService;
+    private final com.achat.security.AccountAccess access;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<JobResponse>>> getAllJobs() {
@@ -51,6 +52,8 @@ public class JobController {
     public ResponseEntity<ApiResponse<UserJobResponse>> addExp(
             @AuthenticationPrincipal String userId,
             @RequestParam int amount) {
+        access.admin(userId);
+        if (amount < 1 || amount > 1000) throw new IllegalArgumentException("경험치는 1~1000 사이여야 합니다");
         UserJobResponse response = jobService.addExp(userId, amount);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

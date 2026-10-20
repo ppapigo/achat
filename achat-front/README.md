@@ -23,7 +23,7 @@ npm run dev
 
 개발에서는 `VITE_API_BASE_URL=/backend`를 유지하고 `BACKEND_URL`만 수정하면 됩니다. Vite가 `/backend` 접두사를 제거해 백엔드로 전달하고 WebSocket 업그레이드도 처리합니다. Vite 환경 변수 중 `VITE_`로 시작하는 값은 브라우저 번들에 포함됩니다. DB 비밀번호와 서버 비밀키는 백엔드 환경 변수로 설정합니다.
 
-회원가입 → 6자리 이메일 인증 → 로그인 순서로 사용할 수 있습니다. 현재 백엔드의 개발용 인증 코드는 **백엔드 콘솔**에 출력됩니다. 메일 발송 서비스는 연결되어 있지 않습니다. 로그인 화면의 이메일 인증 버튼으로 기존 가입자의 인증을 다시 진행할 수 있습니다.
+이메일과 비밀번호로 회원가입하면 바로 로그인할 수 있습니다. 가입 완료 후 로그인 화면으로 이동하며, 별도의 이메일 인증이나 인증 코드 입력은 필요하지 않습니다. 기존 미인증 계정도 로그인할 수 있습니다.
 
 ## 화면과 연결 API
 
@@ -37,7 +37,7 @@ npm run dev
 
 | 경로 | 기능 | 주요 API |
 | --- | --- | --- |
-| `/login`, `/register` | 로그인, 가입, 인증·코드 재요청 | `/auth/login`, `/auth/register`, `/auth/verify`, `/auth/resend-code` |
+| `/login`, `/register` | 로그인, 가입 | `/auth/login`, `/auth/register` |
 | `/` | 피드 작성·공감, 채팅방 미리보기, 내 성장 | `/api/feed`, `/api/me/posts`, `/api/posts/:id/like`, `/rooms` |
 | `/rooms` | 채팅방 검색, 생성 | `/rooms` |
 | `/rooms/:roomId` | 실시간 채팅·답장·공감, 최근 기록, 라운드·증강 | `/rooms/:id/join`, `/messages`, `/round`, `/augments/*`, STOMP |
@@ -92,12 +92,14 @@ achat-front/
 `useChat`은 방 입장 완료 후 `/ws`에 STOMP로 연결합니다. CONNECT 헤더에 JWT를 전달하며 재연결 전에 만료 임박 토큰을 갱신합니다. 연결 실패 시 3초 간격으로 재연결합니다.
 
 - 발행: `/app/rooms/:id/join`, `/chat`, `/like`
-- 구독: `/topic/rooms/:id/messages`, `/likes`, `/events`, `/round`, `/round/end`
+- 구독: `/topic/rooms/:id/messages`, `/message-effects`, `/likes`, `/events`, `/round`, `/round/end`, `/round/highlights`, `/augments`, `/quest`
 - 개인 알림: `/user/queue/cooldown`, `/error`, `/quests`
 
 구독을 먼저 등록한 다음 최근 메시지를 조회해, 로딩 도중 수신한 메시지를 기록과 병합합니다. ID로 중복을 제거하고 오래된 기록이 최신 공감 상태를 덮어쓰지 않게 합니다. Enter로 보내기, Shift+Enter로 줄바꿈을 지원하며 한국어 입력 조합 중 Enter는 전송하지 않습니다.
 
-이번 재구성에 `GET /rooms/:roomId/messages?limit=100`을 백엔드에 추가했습니다. 최근 1~100개를 시간순으로 반환하고 방 멤버에게만 허용합니다. 기록은 JPA/MySQL에 저장한 메시지입니다. 현재 다른 참여자의 메시지 이름은 백엔드 DTO에 닉네임이 없어 사용자 ID 일부를 표시합니다.
+`GET /rooms/:roomId/messages?limit=100`은 최근 1~100개를 시간순으로 반환하고 방 멤버에게만 허용합니다. 기록은 JPA/MySQL에 저장한 메시지입니다. 서버가 닉네임과 구조화된 효과를 반환하며 익명 메시지는 식별자를 제거합니다. 이벤트와 기록은 revision으로 병합합니다.
+
+`components/augments/`에서 증강 27종의 JSX·CSS와 공유 서버 시간 타이머를 관리합니다. 각 선택·대화 구간마다 상대에게 하나를 보내고 하나만 받을 수 있으며, 대상 선택 후 카드와 실제 효과 미리보기를 확인하고 확정합니다. 점유된 대상은 비활성화하고 409 오류 시 목록을 갱신합니다. 상세 규칙·보상 상한·접근성·브라우저 검사 방법은 [증강 시스템 문서](../docs/augment-system.md)를 참고하세요.
 
 화면 이동과 방 탈퇴는 다릅니다. 다른 메뉴로 이동해도 방 멤버로 남으며, 채팅방 나가기 버튼이 REST 탈퇴를 요청합니다. 매칭 상태는 3초 간격으로 조회하고 매칭 완료 시 자동 이동합니다. 라운드·매칭 대기열·접속 상태는 백엔드의 임시 메모리 상태입니다.
 
@@ -117,6 +119,16 @@ API를 별도 도메인에 제공한다면 빌드 전에 `VITE_API_BASE_URL`과 
 ## 검증
 
 Vitest는 API 응답·오류 처리, 동시 토큰 갱신, 늦게 도착한 인증 오류, 로그아웃 중 갱신, 네트워크 장애, 요청 취소, 채팅 기록 병합 및 WebSocket 주소를 검증합니다. 백엔드 통합 테스트는 멤버 권한, 기록 개수 제한과 시간순 반환도 확인합니다.
+
+가입·로그인 흐름은 PC와 모바일에서 별도로 검사합니다. 중복 가입 오류, 가입 완료 후 로그인 화면 이동, 로그인 성공과 세션 저장, 인증 코드 화면·요청 제거를 확인합니다. API 응답을 가로채므로 실제 계정이나 DB는 변경하지 않습니다.
+
+```powershell
+# 터미널 1: 일반 개발 서버
+npm run dev --workspace achat-front -- --port 5176
+
+# 터미널 2: 가입·로그인 검사
+npm run test:auth
+```
 
 별도의 MySQL 테스트 DB에서 Vite 프록시를 통한 주요 화면 API 17개, 로그인·토큰 갱신, STOMP 메시지 송수신·공감, 기록 조회, 라운드·증강 선택, 게시글·댓글·답글, 피드, 구매·장착, 프로필·직업과 매칭 신청·취소를 확인했습니다.
 

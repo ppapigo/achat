@@ -1,0 +1,112 @@
+name: achat-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mysql:
+    image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    command: ["--innodb-buffer-pool-size=512M", "--max-connections=80", "--local-infile=0"]
+    volumes:
+      - achat-data:/var/lib/mysql
+    networks: [data]
+    mem_limit: 1200m
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql --protocol=TCP -h 127.0.0.1 -u \"$$MYSQL_USER\" -Nse 'SELECT 1' >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    logging: *logging
+
+  backend:
+    image: achat-backend:${ACHAT_RELEASE:?Set a release tag}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=UTC&characterEncoding=UTF-8&sslMode=REQUIRED
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set a strong JWT_SECRET}
+      TRUSTED_PROXY_CIDRS: ${ACHAT_FRONT_INTERNAL_IP:-172.30.240.10}/32
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -XX:+ExitOnOutOfMemoryError"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [app, data]
+    read_only: true
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1600m
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging: *logging
+
+  frontend:
+    image: achat-frontend:${ACHAT_RELEASE}
+    build:
+      context: .
+      dockerfile: achat-front/Dockerfile
+    restart: unless-stopped
+    environment:
+      CADDY_TRUSTED_CIDR: ${CADDY_TRUSTED_CIDR:?Set the existing Caddy proxy-net IP with /32}
+      NGINX_ENVSUBST_FILTER: "^CADDY_TRUSTED_CIDR$$"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      app:
+        ipv4_address: ${ACHAT_FRONT_INTERNAL_IP:-172.30.240.10}
+      proxy-net:
+        aliases: [achat-web]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+      - /var/cache/nginx:size=32m,uid=101,gid=101
+      - /etc/nginx/conf.d:size=1m,uid=101,gid=101
+    cap_drop: [ALL]
+    mem_limit: 128m
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 20s
+      timeout: 3s
+      retries: 3
+    logging: *logging
+
+networks:
+  app:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${ACHAT_APP_SUBNET:-172.30.240.0/24}
+  data:
+    internal: true
+  proxy-net:
+    external: true
+    name: proxy-net
+
+volumes:
+  achat-data:
+    external: true
+    name: ${ACHAT_MYSQL_VOLUME:?Select the existing AChat-only MySQL volume explicitly}

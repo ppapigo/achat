@@ -12,6 +12,8 @@
     "lint": "npm run lint --workspace achat-front",
     "test": "npm run test --workspace achat-front",
     "test:ui": "node scripts/check-ui.mjs",
+    "test:auth": "node scripts/check-auth-ui.mjs",
+    "test:augments": "node scripts/check-augments-ui.mjs",
     "test:seasons": "node scripts/check-seasons-ui.mjs"
   },
   "devDependencies": {

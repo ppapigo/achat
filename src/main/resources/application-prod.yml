@@ -1,0 +1,35 @@
+server:
+  port: 8080
+  forward-headers-strategy: none
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  tomcat:
+    max-http-form-post-size: 64KB
+    max-swallow-size: 64KB
+    threads:
+      max: 80
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 12
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  security:
+    allowed-origins: https://achat.grooverapp.com
+    trusted-proxies: ${TRUSTED_PROXY_CIDRS:}
+logging:
+  level:
+    org.springframework.web: WARN
+    org.springframework.messaging: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: OFF

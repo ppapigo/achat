@@ -25,9 +25,13 @@ public class SanctionService {
                                   String adminId, Integer durationMinutes) {
         // 대상 유저 존재 확인 (SYSTEM인 경우 스킵)
         if (!"SYSTEM".equals(adminId)) {
+            requireAdmin(adminId);
             userStore.findById(targetUserId)
                     .orElseThrow(() -> new IllegalArgumentException("대상 유저를 찾을 수 없습니다"));
         }
+        if (reason == null || reason.isBlank() || reason.length() > 1000) throw new IllegalArgumentException("제재 사유는 1~1000자여야 합니다");
+        if (durationMinutes != null && (durationMinutes < -1 || durationMinutes > 525600))
+            throw new IllegalArgumentException("제재 기간이 유효하지 않습니다");
 
         Sanction sanction = new Sanction(targetUserId, type, reason,
                 reportId, adminId, durationMinutes);
@@ -35,7 +39,6 @@ public class SanctionService {
 
         System.out.println("⚖️ 제재 적용: " + targetUserId);
         System.out.println("   유형: " + type.getDescription());
-        System.out.println("   사유: " + reason);
 
         return sanction;
     }
@@ -44,6 +47,7 @@ public class SanctionService {
      * 제재 해제
      */
     public Sanction revokeSanction(String sanctionId, String adminId) {
+        requireAdmin(adminId);
         Sanction sanction = sanctionStore.findById(sanctionId)
                 .orElseThrow(() -> new IllegalArgumentException("제재를 찾을 수 없습니다"));
 
@@ -123,4 +127,8 @@ public class SanctionService {
     }
 
     public record SanctionTypeInfo(SanctionType type, String description, int defaultMinutes) {}
+    private void requireAdmin(String adminId) {
+        if (userStore.findById(adminId).filter(user -> user.isAdmin()).isEmpty() || isBanned(adminId))
+            throw new org.springframework.security.access.AccessDeniedException("관리자 권한이 필요합니다");
+    }
 }

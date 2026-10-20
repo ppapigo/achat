@@ -1,0 +1,6 @@
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+app:
+  security:
+    allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8081,http://localhost:5177,http://localhost:5178

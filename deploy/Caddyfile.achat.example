@@ -1,0 +1,7 @@
+# Review and merge only after explicit approval. Do not replace an existing Caddyfile.
+# The existing Caddy container must already be attached to proxy-net.
+achat.grooverapp.com {
+    reverse_proxy achat-web:8080 {
+        header_up X-Real-IP {remote_host}
+    }
+}

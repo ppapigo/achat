@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   }, []);
   useEffect(() => { reloadUser(); return api.subscribe((session) => { if (!session) { setUser(null); setStatus('ready'); } }); }, [reloadUser]);
   const login = async (email, password) => { const session = await api.request('/auth/login', { method: 'POST', body: { email, password }, auth: false }); api.setSession(session); const next = await reloadUser(); if (!next) throw new Error('사용자 정보를 불러오지 못했습니다. 다시 시도해주세요.'); return next; };
-  return <AuthContext.Provider value={{ user, status, error, login, reloadUser, logout: () => api.setSession(null) }}>{children}</AuthContext.Provider>;
+  const logout = async () => { try { await api.logout(); } catch (error) { setError(error); } };
+  return <AuthContext.Provider value={{ user, status, error, login, reloadUser, logout }}>{children}</AuthContext.Provider>;
 }
 export const useAuth = () => useContext(AuthContext);

@@ -21,7 +21,7 @@ public class RoomController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<RoomResponse>> createRoom(
-            @RequestBody CreateRoomRequest request,
+            @jakarta.validation.Valid @RequestBody CreateRoomRequest request,
             @AuthenticationPrincipal String userId) {
         RoomResponse response = roomService.createRoom(request, userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -34,8 +34,8 @@ public class RoomController {
     }
 
     @GetMapping("/{roomId}")
-    public ResponseEntity<ApiResponse<RoomResponse>> getRoom(@PathVariable String roomId) {
-        RoomResponse response = roomService.getRoom(roomId);
+    public ResponseEntity<ApiResponse<RoomResponse>> getRoom(@PathVariable String roomId, @AuthenticationPrincipal String userId) {
+        RoomResponse response = roomService.getRoom(roomId, userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -67,7 +67,8 @@ public class RoomController {
 
     // 하위 방 목록
     @GetMapping("/{roomId}/subrooms")
-    public ResponseEntity<ApiResponse<List<RoomResponse>>> getSubRooms(@PathVariable String roomId) {
+    public ResponseEntity<ApiResponse<List<RoomResponse>>> getSubRooms(@PathVariable String roomId, @AuthenticationPrincipal String userId) {
+        roomService.getRoom(roomId, userId);
         List<RoomResponse> subRooms = roomService.getSubRooms(roomId);
         return ResponseEntity.ok(ApiResponse.ok(subRooms));
     }

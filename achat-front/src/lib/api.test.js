@@ -7,6 +7,33 @@ const tokens = { accessToken: 'old', refreshToken: 'refresh-old' };
 const next = { accessToken: 'new', refreshToken: 'refresh-new' };
 
 describe('API contracts and authentication recovery', () => {
+  it('does not retry forbidden requests with a refresh token', async () => {
+    const fetchImpl = vi.fn(async () => json({ error: '접근 권한이 없습니다' }, 403));
+    const api = createApiClient({ storage: storage(), fetchImpl }); api.setSession(tokens);
+    await expect(api.request('/api/admin/reports')).rejects.toMatchObject({ status: 403 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(api.readSession()).toEqual(tokens);
+  });
+  it('revokes the server session on logout and clears local credentials', async () => {
+    const fetchImpl = vi.fn(async () => json({ data: null }));
+    const api = createApiClient({ storage: storage(), fetchImpl }); api.setSession(tokens);
+    await api.logout();
+    expect(fetchImpl.mock.calls[0][0]).toBe('/backend/auth/logout');
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toEqual({ refreshToken: tokens.refreshToken });
+    expect(api.readSession()).toBeNull();
+  });
+  it('finishes a refresh before revoking its replacement on logout', async () => {
+    let release; const gate = new Promise((resolve) => { release = resolve; });
+    const fetchImpl = vi.fn(async (url) => {
+      if (url.endsWith('/auth/refresh')) { await gate; return json({ data: next }); }
+      return json({ data: null });
+    });
+    const api = createApiClient({ storage: storage(), fetchImpl }); api.setSession(tokens);
+    const refresh = api.refreshSession(); const logout = api.logout(); release();
+    await Promise.all([refresh, logout]);
+    expect(JSON.parse(fetchImpl.mock.calls.find(([url]) => url.endsWith('/auth/logout'))[1].body).refreshToken).toBe(next.refreshToken);
+    expect(api.readSession()).toBeNull();
+  });
   it('reads both backend response formats and surfaces business errors returned with HTTP 200', async () => {
     expect(unwrapResponse({ success: true, data: { id: 1 } })).toEqual({ id: 1 });
     expect(unwrapResponse({ data: { posts: [] } })).toEqual({ posts: [] });

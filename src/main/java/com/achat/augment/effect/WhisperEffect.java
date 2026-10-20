@@ -15,6 +15,6 @@ public class WhisperEffect implements AugmentEffect {
 
     @Override
     public String apply(String message, AugmentContext context) {
-        return message.toLowerCase();
+        return message.toLowerCase(java.util.Locale.ROOT);
     }
 }

@@ -13,34 +13,34 @@ public class MatchQueue {
     private final Map<String, Long> joinTimes = new ConcurrentHashMap<>();
     private final Map<String, Integer> userPreference = new ConcurrentHashMap<>();
 
-    public void join(String userId, int preferredCount) {
-        leave(userId);
+    public synchronized void join(String userId, int preferredCount) {
+        if (joinTimes.containsKey(userId)) return;
         waitingUsers.add(userId);
         joinTimes.put(userId, System.currentTimeMillis());
         userPreference.put(userId, preferredCount);
     }
 
-    public void leave(String userId) {
+    public synchronized void leave(String userId) {
         waitingUsers.remove(userId);
         joinTimes.remove(userId);
         userPreference.remove(userId);
     }
 
-    public boolean isWaiting(String userId) {
+    public synchronized boolean isWaiting(String userId) {
         return waitingUsers.contains(userId);
     }
 
-    public int getQueueSize() {
+    public synchronized int getQueueSize() {
         return waitingUsers.size();
     }
 
-    public long getWaitTime(String userId) {
+    public synchronized long getWaitTime(String userId) {
         Long joinTime = joinTimes.get(userId);
         if (joinTime == null) return 0;
         return System.currentTimeMillis() - joinTime;
     }
 
-    public int getMostPreferredCount() {
+    public synchronized int getMostPreferredCount() {
         Map<Integer, Integer> counts = new HashMap<>();
         for (Integer pref : userPreference.values()) {
             counts.merge(pref, 1, Integer::sum);
@@ -51,7 +51,7 @@ public class MatchQueue {
                 .orElse(6);  // 테스트용 기본값
     }
 
-    public int getOptimalPlayerCount() {
+    public synchronized int getOptimalPlayerCount() {
         int queueSize = waitingUsers.size();
         int preferred = getMostPreferredCount();
 
@@ -63,14 +63,14 @@ public class MatchQueue {
         return 6;  // 테스트용 기본값
     }
 
-    public long getMaxWaitTime() {
+    public synchronized long getMaxWaitTime() {
         return joinTimes.values().stream()
                 .mapToLong(t -> System.currentTimeMillis() - t)
                 .max()
                 .orElse(0);
     }
 
-    public List<String> pollPlayers(int count) {
+    public synchronized List<String> pollPlayers(int count) {
         List<String> players = new ArrayList<>();
         for (int i = 0; i < count && !waitingUsers.isEmpty(); i++) {
             String userId = waitingUsers.poll();
@@ -81,5 +81,17 @@ public class MatchQueue {
             }
         }
         return players;
+    }
+    public synchronized Runnable checkpoint() {
+        var users = new ArrayList<>(waitingUsers);
+        var times = new HashMap<>(joinTimes);
+        var preferences = new HashMap<>(userPreference);
+        return () -> {
+            synchronized (this) {
+                waitingUsers.clear(); waitingUsers.addAll(users);
+                joinTimes.clear(); joinTimes.putAll(times);
+                userPreference.clear(); userPreference.putAll(preferences);
+            }
+        };
     }
 }

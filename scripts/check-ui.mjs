@@ -73,12 +73,14 @@ try {
     await page.getByRole('textbox', { name: '채팅 메시지' }).fill('화면 검증용 메시지');
     await page.getByRole('button', { name: '메시지 전송' }).click();
     await page.getByText('화면 검증용 메시지', { exact: true }).waitFor();
+    await page.getByRole('button', { name: '10분 라운드 시작' }).click();
     const augmentTarget = page.getByRole('combobox', { name: '증강을 받을 상대' });
     await augmentTarget.waitFor();
     assert.equal(await augmentTarget.locator('option').count(), 4, 'Only the three opponents can be selected');
     assert.equal(await page.locator('.augment-option').first().isEnabled(), false, 'Choose a target before an augment');
     await augmentTarget.selectOption({ label: '작은책방' });
     await page.locator('.augment-option').first().click();
+    await page.getByRole('button', { name: '증강 보내기 확정' }).click();
     await page.getByText('적용 대상: 작은책방', { exact: true }).waitFor();
     assert.equal(await page.locator('.augment-option').count(), 0, 'Completed picks cannot be changed');
     await page.getByRole('link', { name: '채팅방 둘러보기', exact: true }).click();

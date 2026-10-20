@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/backend': {
-          target: env.BACKEND_URL || 'http://localhost:8080',
+          target: env.BACKEND_URL || 'http://localhost:8082',
           changeOrigin: true,
           ws: true,
           rewrite: (path) => path.replace(/^\/backend/, ''),

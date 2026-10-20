@@ -6,10 +6,12 @@ import com.achat.round.RoundReward;
 
 import java.util.List;
 import java.util.Map;
+import com.achat.message.dto.MessageResponse;
 
 public record RoundEndResponse(
         String roomId,
-        List<PlayerResult> results
+        List<PlayerResult> results,
+        List<MessageResponse> highlights
 ) {
     public record PlayerResult(
             String odUserId,
@@ -62,7 +64,7 @@ public record RoundEndResponse(
                 .sorted((a, b) -> a.rank() - b.rank())
                 .toList();
 
-        return new RoundEndResponse(round.getRoomId(), results);
+        return new RoundEndResponse(round.getRoomId(), results, List.of());
     }
 
     public static RoundEndResponse from(Round round) {

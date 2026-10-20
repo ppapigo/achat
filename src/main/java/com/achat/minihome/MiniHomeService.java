@@ -20,6 +20,7 @@ public class MiniHomeService {
     private final PostStore postStore;
 
     public MiniHomePost createPost(String userId, String content) {
+        if (content == null || content.isBlank() || content.length() > 2000) throw new IllegalArgumentException("게시글은 1~2000자여야 합니다");
         Post feedPost = new Post(userId, PostType.FREE, content);
         postStore.save(feedPost);
         return repository.save(new MiniHomePost(feedPost.getId(), userId, content));
@@ -27,7 +28,7 @@ public class MiniHomeService {
 
     @Transactional(readOnly = true)
     public List<MiniHomePost> getPostsByUser(String userId, int limit) {
-        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(userId, PageRequest.of(0, limit));
+        return limit <= 0 ? List.of() : repository.findByAuthorIdOrderByCreatedAtDesc(userId, PageRequest.of(0, Math.min(limit, 100)));
     }
 
     public boolean toggleLike(String postId, String userId) {

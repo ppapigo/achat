@@ -32,7 +32,12 @@ public class User extends JpaEntity {
     @Getter(AccessLevel.NONE)
     private String usernameKey;
     private String passwordHash;
-    private boolean emailVerified;
+    public void changePassword(String passwordHash) { this.passwordHash = passwordHash; }
+    // Keep the legacy column writable for existing databases with a NOT NULL constraint.
+    // It is no longer exposed or used for account access.
+    @Getter(AccessLevel.NONE)
+    @Column(name = "email_verified")
+    private boolean legacyEmailVerified;
     private Instant createdAt;
 
     // 재화 시스템
@@ -63,7 +68,6 @@ public class User extends JpaEntity {
         this.email = email.trim().toLowerCase(java.util.Locale.ROOT);
         this.username = generateDefaultUsername(email);  // 추가!
         this.passwordHash = passwordHash;
-        this.emailVerified = false;
         this.createdAt = Instant.now();
 
         // 재화 초기값
@@ -96,8 +100,6 @@ public class User extends JpaEntity {
         email = email.trim().toLowerCase(java.util.Locale.ROOT);
         usernameKey = username.toLowerCase(java.util.Locale.ROOT);
     }
-
-    public void verifyEmail() { this.emailVerified = true; }
 
     public void addReward(int coins, int exp) {
         this.coins += coins;

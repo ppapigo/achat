@@ -18,5 +18,17 @@ public enum AugmentType {
     CHAOS_ROULETTE,    // 카오스 룰렛
     QUEST_GIVER,       // 퀘스트 기버
     TIME_SHIFTER,      // 타임 시프터
-    INSIGHT_DROP       // 인사이트 드롭
+    INSIGHT_DROP,      // 인사이트 드롭
+    SEALED_MESSAGE,
+    TIME_CAPSULE,
+    TIME_BOMB,
+    JACKPOT_MESSENGER,
+    FORBIDDEN_WORD,
+    GHOST_MESSAGE,
+    ZERO_GRAVITY,
+    DOPPELGANGER,
+    LIKE_OVERDRIVE,
+    FATE_DICE,
+    MAIN_CHARACTER,
+    ICE_SEAL
 }

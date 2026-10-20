@@ -15,6 +15,6 @@ public class CapsLockEffect implements AugmentEffect {
 
     @Override
     public String apply(String message, AugmentContext context) {
-        return message.toUpperCase();
+        return message.toUpperCase(java.util.Locale.ROOT);
     }
 }

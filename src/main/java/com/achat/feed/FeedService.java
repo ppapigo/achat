@@ -44,7 +44,7 @@ public class FeedService {
             return new FeedResponse(List.of(), false);
         }
 
-        int fetchLimit = limit > 0 ? limit : DEFAULT_LIMIT;
+        int fetchLimit = limit > 0 ? Math.min(limit, 100) : DEFAULT_LIMIT;
         List<Post> posts = postStore.findByAuthorIds(feedUserIds, fetchLimit + 1);
 
         boolean hasMore = posts.size() > fetchLimit;
@@ -85,6 +85,8 @@ public class FeedService {
     }
 
     public CommentResponse addComment(String postId, String userId, String content) {
+        if (content == null || content.isBlank() || content.length() > 2000) throw new IllegalArgumentException("댓글은 1~2000자여야 합니다");
+        if (postStore.findById(postId).isEmpty()) throw new IllegalArgumentException("게시글을 찾을 수 없습니다");
         FeedComment comment = new FeedComment(postId, userId, content);
         feedCommentStore.save(comment);
 

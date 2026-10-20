@@ -27,8 +27,12 @@ public class RoundController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<RoundResponse>> getRoundState(@PathVariable String roomId) {
+    public ResponseEntity<ApiResponse<RoundResponse>> getRoundState(@PathVariable String roomId,
+            @AuthenticationPrincipal String userId) {
+        roomAccess.requireMember(roomId, userId);
         RoundResponse response = roundService.getRoundState(roomId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
+
+    private final com.achat.security.RoomAccess roomAccess;
 }

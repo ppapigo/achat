@@ -2,6 +2,9 @@ package com.achat.quest;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import com.achat.persistence.JpaEntity;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -9,22 +12,30 @@ import java.util.Set;
 import java.util.UUID;
 
 @Getter
-public class Quest {
-    private final String id;
-    private final String roomId;
-    private final String messageId;      // 퀘스트가 붙은 메시지
-    private final String creatorId;      // 퀘스트 생성자
-    private final QuestType type;
-    private final int targetCount;       // 목표 수 (예: 답장 3개)
-    private final int rewardCoins;
-    @Getter(AccessLevel.NONE)
-    private final Instant createdAt;
-    @Getter(AccessLevel.NONE)
-    private final Instant expiresAt;
+@Entity
+@Table(name = "chat_quests")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Quest extends JpaEntity {
+    @Id @Column(length = 36)
+    private String id;
+    private String roomId;
+    @Column(unique = true, length = 36)
+    private String messageId;
+    private String creatorId;
+    @Enumerated(EnumType.STRING)
+    private QuestType type;
+    private int targetCount;
+    private int rewardCoins;
+    private Instant createdAt;
+    private Instant expiresAt;
 
-    private final Set<String> completedBy = new HashSet<>();  // 완료한 유저들
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "chat_quest_participants", joinColumns = @JoinColumn(name = "quest_id"))
+    @Column(name = "user_id", length = 36)
+    private Set<String> completedBy = new HashSet<>();
     private int currentCount = 0;
     private boolean completed = false;
+    private boolean cancelled = false;
 
     public Quest(String roomId, String messageId, String creatorId, QuestType type) {
         this.id = UUID.randomUUID().toString();
@@ -39,7 +50,7 @@ public class Quest {
     }
 
     public boolean tryProgress(String odLRXnwB) {
-        if (completed || isExpired()) return false;
+        if (completed || cancelled || isExpired()) return false;
         if (odLRXnwB.equals(creatorId)) return false;  // 본인은 제외
         if (completedBy.contains(odLRXnwB)) return false;  // 중복 방지
 
@@ -54,6 +65,7 @@ public class Quest {
     }
 
     public boolean isExpired() {
-        return Instant.now().isAfter(expiresAt);
+        return !Instant.now().isBefore(expiresAt);
     }
+    public void cancel() { cancelled = true; }
 }

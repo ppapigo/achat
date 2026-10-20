@@ -26,4 +26,16 @@ public class RoundStore {
     public void delete(String roomId) {
         rounds.remove(roomId);
     }
+
+    public void checkpoint(String roomId) {
+        com.achat.common.RoomExecution.checkpoint("round:" + roomId, () -> {
+            Round saved = rounds.get(roomId);
+            Runnable restore = saved == null ? () -> {} : saved.checkpoint();
+            return () -> {
+                restore.run();
+                if (saved == null) rounds.remove(roomId);
+                else rounds.put(roomId, saved);
+            };
+        });
+    }
 }

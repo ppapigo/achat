@@ -2,213 +2,136 @@ package com.achat;
 
 import com.achat.augment.*;
 import com.achat.augment.dto.PickAugmentRequest;
-import com.achat.augment.effect.AugmentEffectRegistry;
-import com.achat.job.JobStore;
-import com.achat.job.UserJobState;
-import com.achat.message.*;
-import com.achat.message.dto.SendMessageRequest;
-import com.achat.quest.QuestService;
-import com.achat.room.Room;
-import com.achat.room.RoomStore;
-import com.achat.round.RoundService;
-import com.achat.sanction.SanctionService;
-import com.achat.shop.ShopService;
-import com.achat.shop.UserEquipment;
-import com.achat.user.UserStore;
-import com.achat.websocket.ChatController;
-import org.junit.jupiter.api.BeforeEach;
+import com.achat.round.RoundPhase;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
+import java.util.*;
+import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
-class AugmentTargetingTests {
-    private final AugmentStore states = new AugmentStore();
-    private final RoomStore rooms = mock(RoomStore.class);
-    private final JobStore jobs = mock(JobStore.class);
-    private final UserStore users = mock(UserStore.class);
-    private final Room room = new Room("Target selection", "alice", 10);
-    private AugmentService augments;
-
-    @BeforeEach
-    void setUp() {
-        room.addMember("bob");
-        room.addMember("charlie");
-        when(rooms.findById(room.getId())).thenReturn(Optional.of(room));
-        when(jobs.getOrCreate(anyString())).thenAnswer(call -> new UserJobState(call.getArgument(0)));
-        AugmentEffectRegistry effects = new AugmentEffectRegistry();
-        effects.init();
-        augments = new AugmentService(states, rooms, effects, jobs, users);
+class AugmentTargetingTests extends AugmentTestSupport {
+    private PickAugmentRequest request(int target) {
+        return new PickAugmentRequest(AugmentType.CAPS_LOCK, ids.get(target), round().getRoundId());
     }
-
-    private UserAugmentState offer(String userId, AugmentType type) {
-        UserAugmentState state = new UserAugmentState(userId, room.getId(), List.of(type));
-        states.save(state);
-        return state;
-    }
-
-    private void pick(String userId, AugmentType type, String targetUserId) {
-        offer(userId, type);
-        augments.pick(room.getId(), userId, new PickAugmentRequest(type, targetUserId));
-    }
-
-    @Test
-    void chosenAugmentOnlyAffectsTheSelectedOpponent() {
-        pick("alice", AugmentType.ECHO_BURST, "bob");
-
-        assertThat(augments.applyAugment(room.getId(), "alice", "hello")).isEqualTo("hello");
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("📢 HELLO");
-        assertThat(augments.applyAugment(room.getId(), "charlie", "hello")).isEqualTo("hello");
-        var response = augments.getOptions(room.getId(), "alice");
-        assertThat(response.selected()).isEqualTo(AugmentType.ECHO_BURST);
-        assertThat(response.targetUserId()).isEqualTo("bob");
-        assertThat(response.targets()).extracting("userId").containsExactly("bob", "charlie");
-
-        pick("bob", AugmentType.THREAD_WEAVER, "alice");
-        assertThat(augments.applyAugment(room.getId(), "alice", "hello")).isEqualTo("🧵 hello");
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("📢 HELLO");
-    }
-
-    @Test
-    void rejectsSelfMissingAndNonMemberTargetsWithoutConsumingThePick() {
-        UserAugmentState state = offer("alice", AugmentType.ECHO_BURST);
-        for (String invalidTarget : new String[] { "alice", "outsider", "", null }) {
-            assertThatThrownBy(() -> augments.pick(room.getId(), "alice",
-                    new PickAugmentRequest(AugmentType.ECHO_BURST, invalidTarget)))
+    @Test void selfMissingAndOtherRoomTargetsDoNotConsumeThePick() {
+        var state = offer(0, AugmentType.CAPS_LOCK);
+        for (String target : Arrays.asList(ids.get(0), "outsider", "", null)) {
+            assertThatThrownBy(() -> augments.pick(roomId, ids.get(0),
+                    new PickAugmentRequest(AugmentType.CAPS_LOCK, target, round().getRoundId())))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThat(state.hasSelected()).isFalse();
         }
-        room.removeMember("bob");
-        assertThatThrownBy(() -> augments.pick(room.getId(), "alice",
-                new PickAugmentRequest(AugmentType.ECHO_BURST, "bob")))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> augments.getOptions(roomId, "outsider")).isInstanceOf(IllegalArgumentException.class);
+    }
+    @Test void duplicateRecipientsReturnConflictAndTheLosingSenderCanRetry() {
+        pick(0, 2, AugmentType.CAPS_LOCK);
+        var state = offer(1, AugmentType.CAPS_LOCK);
+        assertThatThrownBy(() -> augments.pick(roomId, ids.get(1), request(2))).isInstanceOf(AugmentConflictException.class);
         assertThat(state.hasSelected()).isFalse();
+        augments.pick(roomId, ids.get(1), request(3));
+        assertThat(state.getTargetUserId()).isEqualTo(ids.get(3));
+        assertThat(augments.getOptions(roomId, ids.get(4)).targets()).filteredOn(target -> target.userId().equals(ids.get(2)))
+                .allMatch(target -> !target.available());
     }
-
-    @Test
-    void nonMembersCannotFetchOptionsOrSendAugments() {
-        assertThatThrownBy(() -> augments.getOptions(room.getId(), "outsider"))
-                .isInstanceOf(IllegalArgumentException.class);
-        offer("outsider", AugmentType.ECHO_BURST);
-        assertThatThrownBy(() -> augments.pick(room.getId(), "outsider",
-                new PickAugmentRequest(AugmentType.ECHO_BURST, "bob")))
-                .isInstanceOf(IllegalArgumentException.class);
+    @Test void confirmedSelectionIsImmutableAndOptionsAreStable() {
+        var first = augments.getOptions(roomId, ids.get(0));
+        assertThat(augments.getOptions(roomId, ids.get(0)).options()).isEqualTo(first.options());
+        var type = first.options().getFirst().type();
+        augments.pick(roomId, ids.get(0), new PickAugmentRequest(type, ids.get(1), first.roundId()));
+        assertThatThrownBy(() -> augments.pick(roomId, ids.get(0), new PickAugmentRequest(type, ids.get(2), first.roundId())))
+                .isInstanceOf(AugmentConflictException.class);
     }
-
-    @Test
-    void refreshingTargetsPreservesOptionsAndCannotChangeACompletedPick() {
-        var original = augments.getOptions(room.getId(), "alice");
-        room.removeMember("charlie");
-        var refreshed = augments.getOptions(room.getId(), "alice");
-        assertThat(refreshed.options()).isEqualTo(original.options());
-        assertThat(refreshed.targets()).extracting("userId").containsExactly("bob");
-
-        AugmentType type = original.options().get(0).type();
-        augments.pick(room.getId(), "alice", new PickAugmentRequest(type, "bob"));
-        room.addMember("charlie");
-        assertThatThrownBy(() -> augments.pick(room.getId(), "alice", new PickAugmentRequest(type, "charlie")))
-                .isInstanceOf(IllegalStateException.class);
-        assertThat(augments.getOptions(room.getId(), "alice").targetUserId()).isEqualTo("bob");
+    @Test void twoConcurrentSendersReserveOnlyOneRecipientAndLoserCanRetry() throws Exception {
+        offer(0, AugmentType.CAPS_LOCK); offer(1, AugmentType.CAPS_LOCK);
+        var results = race(() -> augments.pick(roomId, ids.get(0), request(2)),
+                () -> augments.pick(roomId, ids.get(1), request(2)));
+        assertThat(results).filteredOn(value -> value instanceof AugmentConflictException).hasSize(1);
+        assertThat(states.inRoom(roomId).stream().filter(UserAugmentState::hasSelected).count()).isEqualTo(1);
+        int loser = states.find(ids.get(0), roomId).orElseThrow().hasSelected() ? 1 : 0;
+        augments.pick(roomId, ids.get(loser), request(3));
+        assertThat(states.inRoom(roomId).stream().filter(UserAugmentState::hasSelected).count()).isEqualTo(2);
     }
-
-    @Test
-    void automaticSelectionChoosesOneOpponentAndPreservesManualTargets() {
-        offer("alice", AugmentType.ECHO_BURST);
-        augments.autoSelectIfNotSelected(room.getId(), "alice");
-        var response = augments.getOptions(room.getId(), "alice");
-        assertThat(response.targetUserId()).isIn("bob", "charlie");
-        assertThat(augments.applyAugment(room.getId(), response.targetUserId(), "hello")).isEqualTo("📢 HELLO");
-        assertThat(augments.applyAugment(room.getId(), "alice", "hello")).isEqualTo("hello");
-
-        pick("bob", AugmentType.THREAD_WEAVER, "charlie");
-        augments.autoSelectIfNotSelected(room.getId(), "bob");
-        assertThat(augments.getOptions(room.getId(), "bob").targetUserId()).isEqualTo("charlie");
-        augments.autoSelectIfNotSelected(room.getId(), "charlie");
-        assertThat(augments.getOptions(room.getId(), "charlie").targetUserId()).isIn("alice", "bob");
+    @Test void concurrentOptionReadsUseTheSameOffer() throws Exception {
+        var results = race(() -> augments.getOptions(roomId, ids.get(0)), () -> augments.getOptions(roomId, ids.get(0)));
+        assertThat(results.get(0)).isEqualToIgnoringGivenFields(results.get(1), "serverTime");
+        assertThat(states.inRoom(roomId)).hasSize(1);
     }
-
-    @Test
-    void automaticSelectionDoesNothingWithoutAnOpponent() {
-        room.removeMember("bob");
-        room.removeMember("charlie");
-        augments.autoSelectIfNotSelected(room.getId(), "alice");
-        assertThat(augments.hasSelected(room.getId(), "alice")).isFalse();
-        assertThat(augments.getOptions(room.getId(), "alice").targets()).isEmpty();
-        assertThat(augments.applyAugment(room.getId(), "alice", "hello")).isEqualTo("hello");
+    @Test void automaticAndManualPicksShareOneReservation() throws Exception {
+        offer(0, AugmentType.CAPS_LOCK);
+        race(() -> { augments.autoSelectIfNotSelected(roomId, ids.get(0)); return "auto"; },
+                () -> augments.pick(roomId, ids.get(0), request(2)));
+        assertThat(states.inRoom(roomId).stream().filter(UserAugmentState::hasSelected).count()).isEqualTo(1);
+        assertThat(progress.findById(AugmentProgress.key(round().getRoundId(),
+                states.find(ids.get(0), roomId).orElseThrow().getTargetUserId()))).isPresent();
     }
-
-    @Test
-    void expiredDepartedAndOtherRoomSelectionsDoNotApply() {
-        pick("alice", AugmentType.ECHO_BURST, "bob");
-        UserAugmentState state = states.find("alice", room.getId()).orElseThrow();
-        ReflectionTestUtils.setField(state, "expiresAt", Instant.now().minusSeconds(1));
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("hello");
-
-        pick("alice", AugmentType.ECHO_BURST, "bob");
-        Room other = new Room("Other room", "alice", 10);
-        other.addMember("bob");
-        when(rooms.findById(other.getId())).thenReturn(Optional.of(other));
-        assertThat(augments.applyAugment(other.getId(), "bob", "hello")).isEqualTo("hello");
-        room.removeMember("bob");
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("hello");
-        room.addMember("bob");
-        room.removeMember("alice");
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("hello");
+    @Test void initializationRaceAndOldSchedulerCannotAffectTheNewCycle() throws Exception {
+        offer(0, AugmentType.CAPS_LOCK);
+        String oldId = round().getRoundId();
+        var oldDeadline = round().getPhaseEndsAt();
+        race(() -> augments.pick(roomId, ids.get(0), new PickAugmentRequest(AugmentType.CAPS_LOCK, ids.get(1), oldId)),
+                () -> { execution.run(roomId, () -> { rounds.advancePhase(roomId); rounds.advancePhase(roomId); }); return "reset"; });
+        assertThat(round().getRoundId()).isNotEqualTo(oldId);
+        assertThat(states.inRoom(roomId)).isEmpty();
+        offer(0, AugmentType.CAPS_LOCK);
+        assertThatThrownBy(() -> augments.pick(roomId, ids.get(0), new PickAugmentRequest(AugmentType.CAPS_LOCK, ids.get(1), oldId)))
+                .isInstanceOf(AugmentConflictException.class);
+        rounds.advancePhase(roomId, oldId, RoundPhase.PICKING, oldDeadline);
+        assertThat(round().getPhase()).isEqualTo(RoundPhase.PICKING);
     }
-
-    @Test
-    void identicalEffectsFromMultipleOpponentsOnlyApplyOnce() {
-        pick("alice", AugmentType.ECHO_BURST, "bob");
-        pick("charlie", AugmentType.ECHO_BURST, "bob");
-        assertThat(augments.applyAugment(room.getId(), "bob", "hello")).isEqualTo("📢 HELLO");
-        assertThat(augments.getAppliedAugmentTypes(room.getId(), "bob")).containsExactly(AugmentType.ECHO_BURST);
+    @Test void expiredManualPickIsRejectedButDeadlineAutoPickWorks() {
+        var state = offer(0, AugmentType.CAPS_LOCK);
+        ReflectionTestUtils.setField(round(), "phaseEndsAt", Instant.now().minusSeconds(1));
+        assertThatThrownBy(() -> augments.pick(roomId, ids.get(0), request(1))).isInstanceOf(AugmentConflictException.class);
+        assertThat(state.hasSelected()).isFalse();
+        rounds.advancePhase(roomId);
+        assertThat(round().getPhase()).isEqualTo(RoundPhase.PLAYING);
+        var selected = states.inRoom(roomId).stream().filter(UserAugmentState::hasSelected).toList();
+        assertThat(selected).extracting(UserAugmentState::getTargetUserId).doesNotHaveDuplicates();
+        assertThat(selected).allMatch(value -> !value.getUserId().equals(value.getTargetUserId()));
     }
-
-    @Test
-    void chatUsesIncomingEffectsForCooldownMetadataAndQuests() {
-        pick("alice", AugmentType.TURBO_CASTER, "bob");
-        pick("charlie", AugmentType.QUEST_GIVER, "bob");
-        pick("bob", AugmentType.TIME_SHIFTER, "charlie");
-        MessageStore messages = mock(MessageStore.class);
-        MessageCooldownStore cooldowns = mock(MessageCooldownStore.class);
-        UserMessageTracker aliceTracker = mock(UserMessageTracker.class);
-        UserMessageTracker bobTracker = mock(UserMessageTracker.class);
-        UserMessageTracker charlieTracker = mock(UserMessageTracker.class);
-        when(cooldowns.getTracker(room.getId(), "alice")).thenReturn(aliceTracker);
-        when(cooldowns.getTracker(room.getId(), "bob")).thenReturn(bobTracker);
-        when(cooldowns.getTracker(room.getId(), "charlie")).thenReturn(charlieTracker);
-        ShopService shop = mock(ShopService.class);
-        when(shop.getEquipment(anyString())).thenAnswer(call -> new UserEquipment(call.getArgument(0)));
-        QuestService quests = mock(QuestService.class);
-        SanctionService sanctions = mock(SanctionService.class);
-        when(sanctions.canChat(anyString())).thenReturn(true);
-        ChatController chat = new ChatController(mock(SimpMessagingTemplate.class), rooms, messages,
-                augments, cooldowns, mock(RoundService.class), shop, users, quests, sanctions);
-
-        for (String sender : List.of("alice", "bob", "charlie")) {
-            chat.sendMessage(room.getId(), new SendMessageRequest("hello"), () -> sender);
+    @Test void noOpponentOrOnlySelfAvailableSkipsAutomaticSelection() {
+        execution.run(roomId, () -> {
+            var room = rooms.findById(roomId).orElseThrow();
+            ids.subList(1, ids.size()).forEach(room::removeMember);
+        });
+        augments.autoSelectIfNotSelected(roomId, ids.get(0));
+        assertThat(augments.hasSelected(roomId, ids.get(0))).isFalse();
+    }
+    @Test void automaticPickSkipsWhenEveryOtherRecipientIsOccupied() {
+        for (int sender = 1; sender < ids.size(); sender++) {
+            pick(sender, sender == ids.size() - 1 ? 1 : sender + 1, AugmentType.CAPS_LOCK);
         }
-
-        verify(aliceTracker).checkCooldownWithMultiplier(5, 1.0);
-        verify(bobTracker).checkCooldownWithMultiplier(5, 0.6);
-        verify(charlieTracker).checkCooldownWithMultiplier(5, 0.8);
-        ArgumentCaptor<Message> saved = ArgumentCaptor.forClass(Message.class);
-        verify(messages, times(3)).save(saved.capture());
-        List<Message> sent = saved.getAllValues();
-        assertThat(sent.get(0).getAppliedContent()).isEqualTo("hello");
-        assertThat(sent.get(0).getAppliedAugment()).isNull();
-        assertThat(sent.get(1).getAppliedAugment()).isEqualTo("TURBO_CASTER,QUEST_GIVER");
-        assertThat(sent.get(1).getAppliedContent()).contains("hello", "[퀘스트]");
-        assertThat(sent.get(2).getAppliedAugment()).isEqualTo("TIME_SHIFTER");
-        verify(quests).createQuest(room.getId(), sent.get(1).getId(), "bob");
-        verifyNoMoreInteractions(quests);
+        augments.autoSelectIfNotSelected(roomId, ids.get(0));
+        assertThat(augments.hasSelected(roomId, ids.get(0))).isFalse();
+        assertThat(states.inRoom(roomId).stream().filter(UserAugmentState::hasSelected).count()).isEqualTo(6);
+    }
+    @Test void databaseRollbackReleasesTheReservationWithoutConsumingThePick() {
+        var state = offer(0, AugmentType.CAPS_LOCK);
+        assertThatThrownBy(() -> execution.run(roomId, () -> {
+            augments.pick(roomId, ids.get(0), request(1));
+            throw new IllegalStateException("rollback");
+        })).isInstanceOf(IllegalStateException.class);
+        assertThat(state.hasSelected()).isFalse();
+        assertThat(round().getScores().get(ids.get(0)).isAugmentUsed()).isFalse();
+        assertThat(progress.findById(AugmentProgress.key(round().getRoundId(), ids.get(1)))).isEmpty();
+        augments.pick(roomId, ids.get(0), request(1));
+        assertThat(state.hasSelected()).isTrue();
+    }
+    @Test void noEffectLeaksToTheSelectorOrAnotherPlayer() {
+        playing(AugmentType.CAPS_LOCK);
+        assertThat(augments.applyAugment(roomId, ids.get(0), "hello")).isEqualTo("hello");
+        assertThat(augments.applyAugment(roomId, ids.get(1), "hello")).isEqualTo("HELLO");
+        assertThat(augments.applyAugment(roomId, ids.get(2), "hello")).isEqualTo("hello");
+    }
+    private List<Object> race(Callable<?> first, Callable<?> second) throws Exception {
+        var barrier = new CyclicBarrier(2);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var tasks = List.of(first, second).stream().map(task -> executor.submit(() -> {
+                barrier.await(10, TimeUnit.SECONDS);
+                try { return task.call(); } catch (AugmentConflictException e) { return e; }
+            })).toList();
+            return List.of(tasks.get(0).get(15, TimeUnit.SECONDS), tasks.get(1).get(15, TimeUnit.SECONDS));
+        }
     }
 }

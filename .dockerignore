@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+**/.env*
+.gradle
+.gradle-user-home
+.agents
+.codex
+.aws
+build
+node_modules
+achat-front/node_modules
+achat-front/dist
+achat-front/test-results
+*.log

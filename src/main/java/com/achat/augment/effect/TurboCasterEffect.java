@@ -1,20 +1,11 @@
 package com.achat.augment.effect;
 
-import com.achat.augment.AugmentContext;
-import com.achat.augment.AugmentType;
+import com.achat.augment.*;
 
+/** Text is preserved; structured metadata drives the JSX presentation and server rules. */
 public class TurboCasterEffect implements AugmentEffect {
-    @Override
     public AugmentType getType() { return AugmentType.TURBO_CASTER; }
-
-    @Override
-    public String getName() { return "터보 캐스터"; }
-
-    @Override
-    public String getDescription() { return "메시지 쿨타임 40% 감소"; }
-
-    @Override
-    public String apply(String message, AugmentContext context) {
-        return message + " ⚡";
-    }
+    public String getName() { return AugmentDefinition.of(getType()).name(); }
+    public String getDescription() { return AugmentDefinition.of(getType()).description(); }
+    public String apply(String message, AugmentContext context) { return message; }
 }

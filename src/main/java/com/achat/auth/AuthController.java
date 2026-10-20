@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@Transactional
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
@@ -28,18 +27,6 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @PostMapping("/verify")
-    public ResponseEntity<ApiResponse<AuthResponse>> verify(@Valid @RequestBody VerifyCodeRequest request) {
-        AuthResponse response = authService.verifyEmail(request);
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @PostMapping("/resend-code")
-    public ResponseEntity<ApiResponse<String>> resendCode(@RequestParam String email) {
-        authService.resendCode(email);
-        return ResponseEntity.ok(ApiResponse.ok("인증 코드가 재발송되었습니다"));
-    }
-
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
         TokenResponse response = authService.login(request);
@@ -47,9 +34,26 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<TokenResponse>> refresh(@RequestBody RefreshRequest request) {
+    public ResponseEntity<ApiResponse<TokenResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
         TokenResponse response = authService.refresh(request.refreshToken());
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshRequest request) {
+        authService.logout(request.refreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    public record ChangePasswordRequest(
+            @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 100) String currentPassword,
+            @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(min = 8, max = 72) String newPassword) {}
+
+    @PostMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@RequestAttribute("userId") String userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(userId, request.currentPassword(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     // 내 정보 조회
@@ -64,15 +68,16 @@ public class AuthController {
      * 프로필 수정
      */
     @PatchMapping("/profile")
+    @Transactional
     public ResponseEntity<ApiResponse<Map<String, Object>>> updateProfile(
             @RequestAttribute("userId") String userId,
             @RequestBody Map<String, String> request
     ) {
         String newUsername = request.get("username");
 
-        if (newUsername == null || newUsername.trim().length() < 2) {
+        if (newUsername == null || newUsername.trim().length() < 2 || newUsername.trim().length() > 50) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("닉네임은 2자 이상이어야 합니다"));
+                    .body(ApiResponse.error("닉네임은 2~50자여야 합니다"));
         }
 
         // 중복 체크

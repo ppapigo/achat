@@ -17,6 +17,8 @@ public class Round {
     private int currentPhaseNumber;
     private Instant phaseEndsAt;
     private Instant roundStartedAt;
+    private final String gameId = UUID.randomUUID().toString();
+    private String roundId;
 
     // 점수 시스템
     private final Map<String, RoundScore> scores = new HashMap<>();
@@ -44,6 +46,7 @@ public class Round {
     public void startPicking() {
         this.phase = RoundPhase.PICKING;
         this.currentPhaseNumber++;
+        this.roundId = UUID.randomUUID().toString();
         this.phaseEndsAt = Instant.now().plusSeconds(pickDurationSeconds);
     }
 
@@ -63,6 +66,7 @@ public class Round {
         this.currentPhaseNumber = 0;
         this.phaseEndsAt = null;
         this.roundStartedAt = null;
+        this.roundId = null;
         this.scores.clear();
         this.rewards.clear();
         this.tracker.reset();
@@ -83,7 +87,7 @@ public class Round {
      * @return true면 점수 인정됨, false면 0점
      */
     public boolean processMessage(String userId, String content) {
-        if (phase != RoundPhase.PLAYING) {
+        if (phase != RoundPhase.PLAYING || phaseEndsAt == null || !Instant.now().isBefore(phaseEndsAt)) {
             return false;
         }
 
@@ -122,5 +126,29 @@ public class Round {
             rewards.put(score.getUserId(), RoundReward.forRank(rank));
             rank++;
         }
+    }
+
+    Runnable checkpoint() {
+        RoundPhase savedPhase = phase;
+        int savedNumber = currentPhaseNumber;
+        Instant savedEnd = phaseEndsAt;
+        Instant savedStart = roundStartedAt;
+        String savedRoundId = roundId;
+        Map<String, RoundScore> savedScores = new HashMap<>();
+        scores.forEach((userId, score) -> savedScores.put(userId, score.copy()));
+        var savedRewards = new HashMap<>(rewards);
+        Runnable restoreTracker = tracker.checkpoint();
+        return () -> {
+            phase = savedPhase;
+            currentPhaseNumber = savedNumber;
+            phaseEndsAt = savedEnd;
+            roundStartedAt = savedStart;
+            roundId = savedRoundId;
+            scores.clear();
+            scores.putAll(savedScores);
+            rewards.clear();
+            rewards.putAll(savedRewards);
+            restoreTracker.run();
+        };
     }
 }

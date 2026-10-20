@@ -136,4 +136,20 @@ public class RoundScoreTracker {
         lastSpeaker = null;
         lastMessage.clear();
     }
+
+    Runnable checkpoint() {
+        var times = new HashMap<>(lastScoredAt);
+        var counts = new HashMap<>(scoredCount);
+        var consecutive = new HashMap<>(consecutiveCount);
+        var messages = new HashMap<>(lastMessage);
+        String speaker = lastSpeaker;
+        return () -> {
+            reset();
+            lastScoredAt.putAll(times);
+            scoredCount.putAll(counts);
+            consecutiveCount.putAll(consecutive);
+            lastMessage.putAll(messages);
+            lastSpeaker = speaker;
+        };
+    }
 }

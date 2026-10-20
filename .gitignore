@@ -18,5 +18,8 @@ achat-front/test-results/
 
 # 환경
 .env
+.env.*
+!.env.example
+!.env.prod.example
 *.local
 *.log

@@ -26,6 +26,8 @@ public class PartyController {
     private final UserStore userStore;
     private final FriendStore friendStore;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.achat.common.RoomExecution execution;
+    private final RoomService roomService;
 
     /**
      * 기존 파티에 친구 초대
@@ -35,6 +37,9 @@ public class PartyController {
             @AuthenticationPrincipal String userId,
             @PathVariable String partyId,
             @RequestBody Map<String, String> request) {
+        return execution.run(partyId, () -> inviteLocked(userId, partyId, request));
+    }
+    private ResponseEntity<ApiResponse<?>> inviteLocked(String userId, String partyId, Map<String, String> request) {
 
         String friendId = request.get("friendId");
 
@@ -50,7 +55,7 @@ public class PartyController {
         }
 
         if (!party.hasMember(userId)) {
-            return ResponseEntity.badRequest()
+            return ResponseEntity.status(403)
                     .body(ApiResponse.error("파티 멤버만 초대할 수 있습니다"));
         }
 
@@ -64,7 +69,7 @@ public class PartyController {
                     .body(ApiResponse.error("이미 파티에 있습니다"));
         }
 
-        party.addMember(friendId);
+        if (!party.addMember(friendId)) return ResponseEntity.badRequest().body(ApiResponse.error("파티 정원이 가득 찼습니다"));
 
         // 초대된 친구에게 알림
         User inviter = userStore.findById(userId).orElse(null);
@@ -94,7 +99,8 @@ public class PartyController {
             @AuthenticationPrincipal String userId,
             @RequestBody CreatePartyRequest request) {
 
-        if (request.friendIds() == null || request.friendIds().isEmpty()) {
+        if (request.friendIds() == null || request.friendIds().isEmpty() || request.friendIds().size() > 49
+                || (request.name() != null && request.name().length() > 100)) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("초대할 친구를 선택하세요"));
         }
@@ -202,12 +208,7 @@ public class PartyController {
                     .body(ApiResponse.error("파티를 찾을 수 없습니다"));
         }
 
-        party.removeMember(userId);
-
-        // 모두 나가면 파티 삭제
-        if (party.getMemberIds().isEmpty()) {
-            roomStore.delete(partyId);
-        }
+        roomService.leaveRoom(partyId, userId);
 
         return ResponseEntity.ok(ApiResponse.ok("파티를 나갔습니다"));
     }

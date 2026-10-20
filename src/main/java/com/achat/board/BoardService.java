@@ -24,6 +24,8 @@ public class BoardService {
 
     @Transactional(readOnly = true)
     public List<BoardResponse> getBoards(BoardCategory category, String keyword, int page, int size) {
+        if (page < 0 || page > 10000 || size < 1 || size > 100 || (keyword != null && keyword.length() > 100))
+            throw new IllegalArgumentException("조회 범위를 확인해 주세요");
         return boardRepository.findAll(search(category, keyword), PageRequest.of(page, size,
                 Sort.by("createdAt").descending())).stream().map(BoardResponse::from).toList();
     }
@@ -144,6 +146,6 @@ public class BoardService {
     }
     private String nickname(String userId) { return userStore.findById(userId).map(User::getUsername).orElse("익명"); }
     private void requireAuthor(String authorId, String userId, String message) {
-        if (!authorId.equals(userId)) throw new IllegalArgumentException(message);
+        if (!authorId.equals(userId)) throw new org.springframework.security.access.AccessDeniedException(message);
     }
 }
