@@ -1,0 +1,5 @@
+services:
+  backend:
+    image: ghcr.io/ppapigo/achat-backend:${APP_IMAGE_TAG:?Set APP_IMAGE_TAG}
+  frontend:
+    image: ghcr.io/ppapigo/achat-frontend:${APP_IMAGE_TAG:?Set APP_IMAGE_TAG}
