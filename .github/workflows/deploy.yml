@@ -75,8 +75,4 @@ jobs:
             export APP_IMAGE_TAG
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
-            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" config --quiet
-            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" pull backend frontend
-            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" up -d --no-build --no-deps --wait backend
-            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" up -d --no-build --no-deps --wait frontend
-            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" ps
+            bash "$RELEASE_DIR/scripts/deploy-guard.sh"
