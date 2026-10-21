@@ -8,9 +8,7 @@ set -euo pipefail
 : "${RELEASE_DIR:?Missing checked-out release directory}"
 test -s "$PROJECT/.env.prod"
 docker network inspect proxy-net >/dev/null
-COMPOSE_CMD='docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml"'
-# Compose command contains only trusted paths. This is a local fixed command, not user input.
-compose() { eval "$COMPOSE_CMD" '"$@"'; }
+compose() { docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" "$@"; }
 services=(backend frontend)
 containers=(achat-prod-backend-1 achat-prod-frontend-1)
 declare -a previous=()
@@ -39,7 +37,7 @@ rollback() {
     printf '  %s:\n    image: %s\n' "${services[i]}" "${previous[i]}" >> "$rollback_file"
   done
   # Override only application image references; never restart dependencies.
-  if ! eval "$COMPOSE_CMD" '-f "$rollback_file" up -d --no-deps --no-build --wait' '"${services[@]}"'; then
+  if ! compose -f "$rollback_file" up -d --no-deps --no-build --wait "${services[@]}"; then
     echo "ROLLBACK FAILED: investigate immediately" >&2
     rm -f "$rollback_file"
     return 1
