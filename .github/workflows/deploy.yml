@@ -58,21 +58,25 @@ jobs:
           command_timeout: 30m
           script: |
             set -eu
+            # Preserve the existing operational checkout, local changes and credentials.
             PROJECT="$HOME/achat"
-            if [ ! -d "$PROJECT/.git" ]; then
-              [ ! -e "$PROJECT" ] || { echo "Existing non-git folder: $PROJECT"; exit 1; }
-              git clone https://github.com/ppapigo/achat.git "$PROJECT"
+            test -s "$PROJECT/.env.prod" || { echo "Existing Achat .env.prod missing; refusing deploy"; exit 1; }
+            DEPLOY_ROOT="$HOME/.achat-actions/releases"
+            RELEASE_DIR="$DEPLOY_ROOT/$APP_IMAGE_TAG"
+            mkdir -p "$DEPLOY_ROOT"
+            if [ ! -e "$RELEASE_DIR" ]; then
+              git clone --quiet --depth 1 --branch main https://github.com/ppapigo/achat.git "$RELEASE_DIR"
             fi
-            cd "$PROJECT"
-            git fetch origin main
-            git merge --ff-only origin/main
-            test -s .env.prod || { echo "Missing .env.prod; refusing deploy"; exit 1; }
+            test -d "$RELEASE_DIR/.git" || { echo "Release checkout invalid"; exit 1; }
+            ACTUAL_SHA="$(git -C "$RELEASE_DIR" rev-parse HEAD)"
+            test "$ACTUAL_SHA" = "$APP_IMAGE_TAG" || { echo "Release SHA mismatch: expected $APP_IMAGE_TAG; got $ACTUAL_SHA"; exit 1; }
+            cd "$RELEASE_DIR"
             docker network inspect proxy-net >/dev/null
             export APP_IMAGE_TAG
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
-            docker compose --env-file .env.prod -f compose.prod.yml -f deploy/compose.actions.yml config --quiet
-            docker compose --env-file .env.prod -f compose.prod.yml -f deploy/compose.actions.yml pull backend frontend
-            docker compose --env-file .env.prod -f compose.prod.yml -f deploy/compose.actions.yml up -d --no-build --no-deps --wait backend
-            docker compose --env-file .env.prod -f compose.prod.yml -f deploy/compose.actions.yml up -d --no-build --no-deps --wait frontend
-            docker compose --env-file .env.prod -f compose.prod.yml -f deploy/compose.actions.yml ps
+            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" config --quiet
+            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" pull backend frontend
+            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" up -d --no-build --no-deps --wait backend
+            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" up -d --no-build --no-deps --wait frontend
+            docker compose --project-directory "$RELEASE_DIR" --env-file "$PROJECT/.env.prod" -f "$RELEASE_DIR/compose.prod.yml" -f "$RELEASE_DIR/deploy/compose.actions.yml" ps
