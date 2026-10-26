@@ -18,9 +18,10 @@ public class FeedController {
     @GetMapping
     public ResponseEntity<?> getFeed(
             @RequestAttribute("userId") String userId,
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String cursor
     ) {
-        FeedService.FeedResponse response = feedService.getFeed(userId, limit);
+        FeedService.FeedResponse response = feedService.getFeed(userId, limit, cursor);
         return ResponseEntity.ok(Map.of("data", response));
     }
 
@@ -45,9 +46,10 @@ public class FeedController {
     @DeleteMapping("/{postId}/comments/{commentId}")
     public ResponseEntity<?> deleteComment(
             @PathVariable String postId,
-            @PathVariable String commentId
+            @PathVariable String commentId,
+            @RequestAttribute("userId") String userId
     ) {
-        feedService.deleteComment(postId, commentId);
+        feedService.deleteComment(postId, commentId, userId);
         return ResponseEntity.ok(Map.of("message", "삭제됨"));
     }
 

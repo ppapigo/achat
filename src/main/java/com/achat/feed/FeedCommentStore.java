@@ -13,6 +13,7 @@ public class FeedCommentStore {
     private final FeedCommentRepository repository;
 
     public FeedComment save(FeedComment comment) { return repository.save(comment); }
+    public Optional<FeedComment> findById(String id) { return repository.findById(id); }
     public List<FeedComment> findByPostId(String postId) { return repository.findByPostIdOrderByCreatedAtAsc(postId); }
     public int countByPostId(String postId) { return Math.toIntExact(repository.countByPostId(postId)); }
     public void delete(String commentId, String postId) { repository.deleteByIdAndPostId(commentId, postId); }

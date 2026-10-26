@@ -104,8 +104,34 @@ export async function previewFetch(input, { method = 'GET', body, signal } = {})
     if (action === 'preview-chat/chat') { roomMessages(roomId).push({ ...payload, id: `message-${nextId()}`, roomId, senderId: user.id, createdAt: timestamp(), likeCount: 0, likedByUserIds: [], replyToPreview: roomMessages(roomId).find((item) => item.id === payload.replyToId)?.content }); changed(roomId); return result(true); }
     if (action === 'preview-chat/like') { const message = roomMessages(roomId).find((item) => item.id === payload.messageId); if (message) { const liked = message.likedByUserIds.includes(user.id); message.likedByUserIds = liked ? message.likedByUserIds.filter((id) => id !== user.id) : [...message.likedByUserIds, user.id]; message.likeCount += liked ? -1 : 1; } changed(roomId); return result(true); }
   }
-  if (path === '/api/feed') return result({ posts: viewState === 'empty' ? [] : posts, hasMore: false });
-  if (path === '/api/me/posts') { const post = { ...payload, id: `post-${nextId()}`, authorId: user.id, authorUsername: user.username, likeCount: 0, commentCount: 0, liked: false, createdAt: timestamp() }; posts.unshift(post); return result(post); }
+  if (path === '/api/feed') {
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 20));
+    const cursor = url.searchParams.get('cursor');
+    const start = cursor ? posts.findIndex((post) => post.id === cursor) + 1 : 0;
+    const page = viewState === 'empty' ? [] : posts.slice(start, start + limit);
+    const hasMore = viewState !== 'empty' && start + limit < posts.length;
+    return result({ posts: page, hasMore, nextCursor: hasMore ? page.at(-1).id : null });
+  }
+  if (path === '/api/me/posts' && method === 'POST') { const post = { ...payload, id: `post-${nextId()}`, authorId: user.id, authorUsername: user.username, likeCount: 0, commentCount: 0, liked: false, createdAt: timestamp() }; posts.unshift(post); return result(post); }
+  const feedCommentsMatch = path.match(/^\/api\/feed\/([^/]+)\/comments(?:\/([^/]+))?$/);
+  if (feedCommentsMatch) {
+    const [, postId, commentId] = feedCommentsMatch;
+    const post = posts.find((item) => item.id === postId);
+    if (!post) return result('소식을 찾을 수 없어요.', 404);
+    const comments = post.comments ||= Array.from({ length: post.commentCount }, (_, index) => ({ id: `${postId}-comment-${index}`, authorId: 'preview-friend', authorUsername: '느긋한오후', content: index ? '다음 소식도 기다릴게요!' : '소식 나눠줘서 반가워요.', createdAt: timestamp(5) }));
+    if (method === 'GET') return result(comments);
+    if (method === 'POST') {
+      if (!payload.content?.trim() || payload.content.length > 2000) return result('댓글은 1~2000자여야 합니다', 400);
+      const comment = { id: `comment-${nextId()}`, authorId: user.id, authorUsername: user.username, content: payload.content, createdAt: timestamp() };
+      comments.push(comment); post.commentCount = comments.length; return result(comment);
+    }
+    if (method === 'DELETE') {
+      const index = comments.findIndex((comment) => comment.id === commentId);
+      if (index < 0) return result('댓글을 찾을 수 없어요.', 404);
+      if (comments[index].authorId !== user.id) return result('내 댓글만 삭제할 수 있습니다', 403);
+      comments.splice(index, 1); post.commentCount = comments.length; return result({ message: '삭제됨' });
+    }
+  }
   if (path.match(/^\/api\/posts\/[^/]+\/like$/)) { const post = posts.find((item) => item.id === path.split('/')[3]); if (post) { post.liked = !post.liked; post.likeCount += post.liked ? 1 : -1; } return result(post); }
   if (path === '/api/boards' && method === 'POST') { const board = { ...payload, id: nextId(), authorId: user.id, authorNickname: user.username, categoryName: labels[payload.category], comments: [], commentCount: 0, likeCount: 0, viewCount: 0, liked: false, createdAt: timestamp() }; boards.unshift(board); return result(board); }
   if (path === '/api/boards') { const list = boards.filter((board) => (!url.searchParams.get('category') || board.category === url.searchParams.get('category')) && board.title.includes(url.searchParams.get('keyword') || '')); return result({ boards: viewState === 'empty' ? [] : list, hasNext: false, page: 0, total: list.length }); }

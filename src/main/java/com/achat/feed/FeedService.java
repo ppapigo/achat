@@ -12,6 +12,7 @@ import com.achat.post.dto.PostDto.PostResponse;
 import com.achat.social.InteractionStore;
 import com.achat.user.UserStore;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,19 +34,17 @@ public class FeedService {
     private final UserStore userStore;
     private final FeedCommentStore feedCommentStore;  // 추가!
 
-    public FeedResponse getFeed(String userId, int limit) {
+    public FeedResponse getFeed(String userId, int limit, String cursor) {
         Set<String> feedUserIds = new HashSet<>();
 
         feedUserIds.addAll(friendStore.getFriendIds(userId));
         feedUserIds.addAll(interactionStore.getRecent(userId, INTERACTION_DAYS));
         feedUserIds.add(userId);
 
-        if (feedUserIds.isEmpty()) {
-            return new FeedResponse(List.of(), false);
-        }
-
         int fetchLimit = limit > 0 ? Math.min(limit, 100) : DEFAULT_LIMIT;
-        List<Post> posts = postStore.findByAuthorIds(feedUserIds, fetchLimit + 1);
+        Post before = cursor == null || cursor.isBlank() ? null : postStore.findById(cursor)
+                .orElseThrow(() -> new IllegalArgumentException("이전 소식을 찾을 수 없습니다. 피드를 새로고침해 주세요"));
+        List<Post> posts = postStore.findFeed(feedUserIds, fetchLimit + 1, before);
 
         boolean hasMore = posts.size() > fetchLimit;
         if (hasMore) {
@@ -62,7 +61,7 @@ public class FeedService {
                 })
                 .collect(Collectors.toList());
 
-        return new FeedResponse(responses, hasMore);
+        return new FeedResponse(responses, hasMore, hasMore ? posts.get(posts.size() - 1).getId() : null);
     }
 
     // ===== 댓글 메서드 추가 =====
@@ -103,7 +102,11 @@ public class FeedService {
         );
     }
 
-    public void deleteComment(String postId, String commentId) {
+    public void deleteComment(String postId, String commentId, String userId) {
+        FeedComment comment = feedCommentStore.findById(commentId)
+                .filter(item -> item.getPostId().equals(postId))
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다"));
+        if (!comment.getAuthorId().equals(userId)) throw new AccessDeniedException("내 댓글만 삭제할 수 있습니다");
         feedCommentStore.delete(commentId, postId);
     }
 
@@ -111,7 +114,8 @@ public class FeedService {
 
     public record FeedResponse(
             List<PostResponse> posts,
-            boolean hasMore
+            boolean hasMore,
+            String nextCursor
     ) {}
 
     public record CommentResponse(

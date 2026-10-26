@@ -39,6 +39,13 @@ public class PostStore {
         likeRepository.deleteByTargetTypeAndTargetId(ContentLike.TargetType.POST, postId);
         repository.deleteById(postId);
     }
+    public List<Post> findFeed(Set<String> authorIds, int limit, Post cursor) {
+        if (limit <= 0 || authorIds.isEmpty()) return List.of();
+        PageRequest page = PageRequest.of(0, Math.min(limit, 101));
+        return cursor == null
+                ? repository.findByAuthorIdInOrderByCreatedAtDescIdDesc(authorIds, page)
+                : repository.findFeedBefore(authorIds, cursor.getCreatedAt(), cursor.getId(), page);
+    }
     public Optional<Instant> getLastPostTime(String authorId) {
         return quotaRepository.findById(authorId).map(PostQuota::getLastPostAt);
     }

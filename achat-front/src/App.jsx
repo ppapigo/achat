@@ -4,6 +4,7 @@ import { Empty, ErrorState, Loading } from './components/UI.jsx';
 import Shell from './components/Shell.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import HomePage from './pages/HomePage.jsx';
+import FeedPage from './pages/FeedPage.jsx';
 import RoomsPage from './pages/RoomsPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import BoardPage from './pages/BoardPage.jsx';
@@ -26,7 +27,7 @@ export default function App() {
   return <Routes>
     <Route path="/login" element={<AuthPage />} /><Route path="/register" element={<AuthPage register />} />
     <Route element={<Protected />}><Route element={<Shell />}>
-      <Route index element={<HomePage />} /><Route path="rooms" element={<RoomsPage />} /><Route path="rooms/:roomId" element={<ChatPage />} />
+      <Route index element={<HomePage />} /><Route path="feed" element={<FeedPage />} /><Route path="rooms" element={<RoomsPage />} /><Route path="rooms/:roomId" element={<ChatPage />} />
       <Route path="boards" element={<BoardPage />} /><Route path="boards/:boardId" element={<BoardDetailPage />} />
       <Route path="friends" element={<FriendsPage />} /><Route path="party" element={<PartyPage />} /><Route path="match" element={<MatchPage />} />
       <Route path="cards" element={<CardsPage />} /><Route path="shop" element={<ShopPage />} /><Route path="profile" element={<ProfilePage />} />
